@@ -302,7 +302,7 @@ def main(config: int) -> list[OptimizeResult]:
                 pool_size=1000,
                 weightpattern=[0.95],
                 sigma=BoundedParameter(0.2, 0.2 * 0.5**5, 0.2),
-                perturbation_probability=1.0,
+                perturbation_strategy="fixed",
             ),
             maxeval=200,
             Ntrials=3,

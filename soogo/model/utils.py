@@ -60,7 +60,7 @@ def create_initial_design(
     sample = random_sample(m, bounds, iindex=iindex, seed=rng)
     if m >= m_for_surrogate:
         count = 0
-        while not surrogate.check_initial_design(sample):
+        while surrogate.check_initial_design(sample) > 0:
             sample = random_sample(m, bounds, iindex=iindex, seed=rng)
             count += 1
             if count > n_trials:

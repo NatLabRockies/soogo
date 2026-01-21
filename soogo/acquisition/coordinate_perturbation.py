@@ -19,11 +19,9 @@ __authors__ = ["Weslley S. Pereira"]
 
 import numpy as np
 from math import log
-from scipy.spatial.distance import cdist
-from typing import Union
+from typing import Union, Optional
 
 from .weighted_acquisition import WeightedAcquisition
-from .utils import select_weighted_candidates
 from ..model import Surrogate
 from ..sampling import dds_sample, dds_uniform_sample
 from ..optimize.result import OptimizeResult
@@ -63,9 +61,10 @@ class BoundedParameter:
             self.min = min if min is not None else value
             self.max = max if max is not None else value
 
-        assert self.min <= self.value <= self.max, (
-            "Initial value must be within bounds."
-        )
+        if self.min > self.value or self.value > self.max:
+            raise ValueError(
+                "Initial value must be within the specified bounds."
+            )
 
     def increase(self) -> None:
         """Increase the parameter value, up to the upper bound."""
@@ -94,8 +93,28 @@ class CoordinatePerturbation(WeightedAcquisition):
     :param sigma: Initial perturbation scale; can be a float or a
         :class:`.BoundedParameter`. Default is ``0.25`` in the range
         [0.0, 0.25].
-    :param perturbation_probability: Initial probability to perturb a
-        coordinate; if ``None``, a dynamic schedule (as in DYCORS) is used.
+    :param perturbation_strategy: Strategy to set the perturbation probability.
+        Options:
+
+        - ``"dycors"`` (default). It exponentially decreases the probability
+            of perturbing each coordinate as the number of function evaluations
+            according to the rule:
+
+            .. math::
+
+                P_i = min(20/d, 1) * \\left(
+                1 - \\frac{\\log(k+1)}{\\log(N)}
+                \\right)
+
+            where :math:`d` is the problem dimension, :math:`k` is the
+            current number of function evaluations, and :math:`N` is the
+            maximum number of function evaluations.
+        - ``"fixed"``. Uses a fixed perturbation probability of 1.0 (all
+            coordinates perturbed).
+        - ``"random"``. Uses a random perturbation probability in [0, 1] at each
+            iteration.
+
+        Defaults to ``"dycors"``.
     :param int n_continuous_search: Number of iterations to remain in
         continuous-search mode after an improvement in integer variables.
 
@@ -107,14 +126,9 @@ class CoordinatePerturbation(WeightedAcquisition):
 
         Perturbation scale used in candidate generation.
 
-    .. attribute:: perturbation_probability
+    .. attribute:: perturbation_strategy
 
-        Default probability of perturbing each coordinate
-        (updated in :meth:`update()`).
-
-    .. attribute:: dynamic_perturbation_probability
-
-        Whether to use a dynamic schedule for the perturbation probability.
+        Strategy to set the perturbation probability.
 
     .. attribute:: remainingCountinuousSearch
 
@@ -162,7 +176,7 @@ class CoordinatePerturbation(WeightedAcquisition):
         self,
         sampling_strategy: str = "dds",
         sigma: Union[float, BoundedParameter, None] = None,
-        perturbation_probability=None,
+        perturbation_strategy="dycors",
         n_continuous_search: int = 0,
         **kwargs,
     ) -> None:
@@ -177,12 +191,8 @@ class CoordinatePerturbation(WeightedAcquisition):
         )
 
         # Perturbation probability for every coordinate (updated in `update()`)
-        if perturbation_probability is not None:
-            self.perturbation_probability = perturbation_probability
-            self.dynamic_perturbation_probability = False
-        else:
-            self.perturbation_probability = 1.0
-            self.dynamic_perturbation_probability = True
+        self.perturbation_strategy = perturbation_strategy
+        self._perturbation_probability = 1.0
 
         # Continuous local search
         self.remainingCountinuousSearch = 0
@@ -214,18 +224,12 @@ class CoordinatePerturbation(WeightedAcquisition):
         tol0 = super().tol(bounds)
         return tol0 * min(4 * self.sigma.value, 1.0)
 
-    def generate_candidates(
-        self, bounds, mu, prob=None, iindex: tuple[int, ...] = ()
-    ):
-        # Compute probability of perturbing each coordinate
-        if prob is None:
-            prob = self.perturbation_probability
-
+    def generate_candidates(self, bounds, mu, iindex: tuple[int, ...] = ()):
         if self.sampling_strategy == "dds":
             return dds_sample(
                 self.pool_size,
                 bounds,
-                probability=prob,
+                probability=self._perturbation_probability,
                 mu=mu,
                 sigma_ref=self.sigma.value,
                 iindex=iindex,
@@ -235,7 +239,7 @@ class CoordinatePerturbation(WeightedAcquisition):
             return dds_uniform_sample(
                 self.pool_size,
                 bounds,
-                probability=prob,
+                probability=self._perturbation_probability,
                 mu=mu,
                 sigma_ref=self.sigma.value,
                 iindex=iindex,
@@ -252,9 +256,9 @@ class CoordinatePerturbation(WeightedAcquisition):
         surrogateModel: Surrogate,
         bounds,
         n: int = 1,
-        constr_fun=None,
-        perturbation_probability=None,
+        constr=None,
         xbest=None,
+        exclusion_set: Optional[np.ndarray] = None,
         **kwargs,
     ) -> np.ndarray:
         """Generate candidates via local DDS-like perturbations and select up
@@ -264,13 +268,13 @@ class CoordinatePerturbation(WeightedAcquisition):
         :param sequence bounds: List with the limits [x_min,x_max] of each
             direction x in the space.
         :param n: Number of points requested.
-        :param constr_fun: Optional constraint function. Must return a vector
+        :param constr: Optional constraint function. Must return a vector
             (or 2D array) with non-positive values for feasible candidates.
-        :param perturbation_probability: Probability to perturb each coordinate.
-            If ``None``, it is computed dynamically using the DYCORS schedule.
         :param xbest: Best point so far. If ``None``, inferred from
             the surrogate’s training data (min for single-objective;
             nondominated set for multi-objective).
+        :param exclusion_set: Known points, if any, in addition to the ones
+            used to train the surrogate.
         :return: m-by-dim matrix with the selected points, where m <= n.
         """
         dim = len(bounds)  # Dimension of the problem
@@ -278,7 +282,7 @@ class CoordinatePerturbation(WeightedAcquisition):
         iindex = surrogateModel.iindex
 
         # Report unused kwargs
-        super().report_unused_kwargs(kwargs)
+        super().report_unused_optimize_kwargs(kwargs)
 
         # Choose best point if not provided
         if xbest is None:
@@ -294,42 +298,13 @@ class CoordinatePerturbation(WeightedAcquisition):
             x[:, coord] = self.generate_candidates(
                 [bounds[i] for i in coord],
                 xbest[coord],
-                perturbation_probability,
             )
         else:
-            x = self.generate_candidates(
-                bounds, xbest, perturbation_probability, iindex
-            )
+            x = self.generate_candidates(bounds, xbest, iindex)
 
-        if constr_fun is not None:
-            # Filter out candidates that do not satisfy the constraints
-            constr_values = constr_fun(x)
-            if constr_values.ndim == 1:
-                feasible_idx = constr_values <= 0
-            else:
-                feasible_idx = np.all(constr_values <= 0, axis=1)
-            x = x[feasible_idx]
-            if x.shape[0] == 0:
-                return np.empty((0, dim))
-
-        # Evaluate candidates
-        fx = surrogateModel(x)
-
-        # Select best candidates
-        xselected, _ = select_weighted_candidates(
-            x,
-            cdist(x, surrogateModel.X),
-            fx,
-            n,
-            self.tol(bounds),
-            self.weightpattern,
-        )
-        n = xselected.shape[0]
-
-        # Rotate weight pattern
-        self.weightpattern[:] = (
-            self.weightpattern[n % len(self.weightpattern) :]
-            + self.weightpattern[: n % len(self.weightpattern)]
+        # Select candidates
+        x_selected = self.choose_candidates(
+            surrogateModel, bounds, x, n, constr, exclusion_set
         )
 
         # In case of continuous search, update counter
@@ -337,10 +312,10 @@ class CoordinatePerturbation(WeightedAcquisition):
         # only be deactivated by `update()`.
         if self.remainingCountinuousSearch > 0:
             self.remainingCountinuousSearch = max(
-                self.remainingCountinuousSearch - n, 1
+                self.remainingCountinuousSearch - len(x_selected), 1
             )
 
-        return xselected
+        return x_selected
 
     def update(self, out: OptimizeResult, model: Surrogate) -> None:
         # Problem dimension
@@ -431,11 +406,13 @@ class CoordinatePerturbation(WeightedAcquisition):
         self.best_known_x = np.copy(out.x)
 
         # Update perturbarion probability
-        if self.dynamic_perturbation_probability:
+        if self.perturbation_strategy == "dycors":
             maxeval = len(out.x)
             if out.nfev < maxeval:
-                self.perturbation_probability = min(20 / dim, 1) * (
+                self._perturbation_probability = min(20 / dim, 1) * (
                     1 - (log(out.nfev + 1) / log(maxeval))
                 )
             else:
-                self.perturbation_probability = 1.0
+                self._perturbation_probability = 1.0
+        elif self.perturbation_strategy == "random":
+            self._perturbation_probability = self.rng.uniform(0.0, 1.0)

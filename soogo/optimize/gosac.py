@@ -16,6 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
+import logging
+import warnings
 from typing import Callable, Optional
 
 import numpy as np
@@ -28,6 +30,8 @@ from ..acquisition import (
 )
 from ..model import RbfModel, Surrogate
 from .utils import OptimizeResult
+
+logger = logging.getLogger(__name__)
 
 
 def gosac(
@@ -59,8 +63,8 @@ def gosac(
     :param surrogateModel: Surrogate model to be used for the
         constraints. If None is provided, a :class:`.RbfModel` model is
         used.
-    :param disp: If True, print information about the optimization
-        process. The default is False.
+    :param disp: Deprecated and ignored. Configure logging instead using
+        standard Python logging levels.
     :param callback: If provided, the callback function will be called
         after each iteration with the current optimization result. The
         default is None.
@@ -74,8 +78,15 @@ def gosac(
         Optimization 69, 1 (September 2017), 117–136.
         https://doi.org/10.1007/s10898-017-0496-y
     """
+    if disp:
+        warnings.warn(
+            "'disp' is deprecated and ignored; use logging levels instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     dim = len(bounds)  # Dimension of the problem
-    assert dim > 0
+    if dim <= 0:
+        raise ValueError("bounds must define at least one dimension")
 
     # Random number generator
     rng = np.random.default_rng(seed)
@@ -108,12 +119,17 @@ def gosac(
 
     # Initialize best values
     out.init_best_values()
-    assert isinstance(out.x, np.ndarray)
-    assert isinstance(out.fx, np.ndarray)
+    assert isinstance(out.x, np.ndarray), "Expected np.ndarray, got %s" % type(
+        out.fx
+    )
+    assert isinstance(out.fx, np.ndarray), (
+        "Expected np.ndarray, got %s" % type(out.fx)
+    )
 
     # Reserve space for the surrogate model to avoid repeated allocations
     gdim = out.fsample.shape[1] - 1
-    assert gdim > 0
+    if gdim <= 0:
+        raise ValueError("Constraint dimension must be positive")
     surrogateModel.reserve(surrogateModel.ntrain + maxeval, dim, gdim)
 
     # Acquisition functions
@@ -142,30 +158,30 @@ def gosac(
 
     # Phase 1: Find a feasible solution
     while out.nfev < maxeval and out.x.size == 0:
-        if disp:
-            print("(Phase 1) Iteration: %d" % out.nit)
-            print("fEvals: %d" % out.nfev)
-            print(
-                "Constraint violation in the last step: %f" % np.max(ySelected)
-            )
+        logger.info("(Phase 1) Iteration: %d", out.nit)
+        logger.info("fEvals: %d", out.nfev)
+        logger.info(
+            "Constraint violation in the last step: %f", np.max(ySelected)
+        )
 
         # Update surrogate models
         t0 = time.time()
         if out.nfev > 0:
             surrogateModel.update(xselected, ySelected)
         tf = time.time()
-        if disp:
-            print("Time to update surrogate model: %f s" % (tf - t0))
+        logger.info("Time to update surrogate model: %f s", (tf - t0))
 
         # Solve the surrogate multiobjective problem
         t0 = time.time()
-        bestCandidates = acquisition1.optimize(surrogateModel, bounds, n=0)
+        bestCandidates = acquisition1.optimize(
+            surrogateModel, bounds, n=(maxeval - out.nfev)
+        )
         tf = time.time()
-        if disp:
-            print(
-                "Solving the surrogate multiobjective problem: %d points in %f s"
-                % (len(bestCandidates), tf - t0)
-            )
+        logger.info(
+            "Solving the surrogate multiobjective problem: %d points in %f s",
+            len(bestCandidates),
+            tf - t0,
+        )
 
         # Evaluate the surrogate at the best candidates
         sCandidates = surrogateModel(bestCandidates)
@@ -222,35 +238,32 @@ def gosac(
         if out.nfev > 0:
             surrogateModel.update(xselected, ySelected)
         tf = time.time()
-        if disp:
-            print("Time to update surrogate model: %f s" % (tf - t0))
+        logger.info("Time to update surrogate model: %f s", (tf - t0))
 
         return out
 
     # Phase 2: Optimize the objective function
     while out.nfev < maxeval:
-        if disp:
-            print("(Phase 2) Iteration: %d" % out.nit)
-            print("fEvals: %d" % out.nfev)
-            print("Best value: %f" % out.fx[0])
+        logger.info("(Phase 2) Iteration: %d", out.nit)
+        logger.info("fEvals: %d", out.nfev)
+        logger.info("Best value: %f", out.fx[0])
 
         # Update surrogate models
         t0 = time.time()
         if out.nfev > 0:
             surrogateModel.update(xselected, ySelected)
         tf = time.time()
-        if disp:
-            print("Time to update surrogate model: %f s" % (tf - t0))
+        logger.info("Time to update surrogate model: %f s", (tf - t0))
 
         # Solve cheap problem with multiple constraints
         t0 = time.time()
         xselected = acquisition2.optimize(surrogateModel, bounds, n=1)
         tf = time.time()
-        if disp:
-            print(
-                "Solving the cheap problem with surrogate cons: %d points in %f s"
-                % (len(xselected), tf - t0)
-            )
+        logger.info(
+            "Solving the cheap problem with surrogate cons: %d points in %f s",
+            len(xselected),
+            tf - t0,
+        )
 
         # Compute g(xselected)
         ySelected = np.asarray(gfun(xselected))
@@ -284,7 +297,6 @@ def gosac(
         if out.nfev > 0:
             surrogateModel.update(xselected, ySelected)
         tf = time.time()
-        if disp:
-            print("Time to update surrogate model: %f s" % (tf - t0))
+        logger.info("Time to update surrogate model: %f s", (tf - t0))
 
     return out

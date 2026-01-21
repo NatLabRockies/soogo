@@ -30,6 +30,7 @@ from ..model import Surrogate
 from ..integrations.pymoo import ListDuplicateElimination
 from ..termination import TerminationCondition
 from ..optimize.result import OptimizeResult
+from ..utils import report_unused_kwargs
 
 
 class Acquisition(ABC):
@@ -90,42 +91,48 @@ class Acquisition(ABC):
         self.termination = termination
 
     @classmethod
-    def report_unused_kwargs(cls, kwargs) -> None:
+    def report_unused_optimize_kwargs(cls, kwargs) -> None:
         """Report any unused keyword arguments passed to the acquisition
         function.
 
         :param kwargs: Dictionary of keyword arguments.
         """
-        if len(kwargs) > 0:
-            import warnings
-
-            warnings.warn(
-                f"The acquisition function '{cls.__name__}' received unused "
-                "keyword arguments: "
-                f"{', '.join(list(kwargs.keys()))}.",
-                UserWarning,
-            )
+        report_unused_kwargs(f"{cls.__name__}.optimize", kwargs)
 
     def optimize(
         self,
         surrogateModel: Surrogate,
         bounds,
+        n: int = 0,
+        xbest=None,
+        ybest=None,
+        constr=None,
+        exclusion_set: Optional[np.ndarray] = None,
         **kwargs,
     ) -> np.ndarray:
         """Get n sample points that optimize the acquisition function.
 
+        Optional parameters are only available in specific acquisition
+        classes. Look documentation in the respective subclass.
+
         :param surrogateModel: Surrogate model.
         :param sequence bounds: List with the limits [x_min,x_max] of each
             direction x in the space.
-        :param kwargs: Additional keyword arguments. Each acquisition function
-            may define its own set of keyword arguments. Look documented in the
-            respective subclass.
-        :return: n-by-dim matrix with the selected points.
+        :param n: Number of points requested.
+        :param xbest: Best point(s) found so far.
+        :param ybest: Best objective value(s) found so far.
+        :param constr: Constraint function for candidate points.
+        :param exclusion_set: Known points, if any, in addition to the ones
+            used to train the surrogate.
+        :param kwargs: Additional keyword arguments. Unused kwargs should be
+            reported using :meth:`report_unused_optimize_kwargs`.
+
+        :return: k-by-dim matrix with the selected points, where k <= n.
         """
         # Report non-used kwargs
-        self.report_unused_kwargs(kwargs)
+        self.report_unused_optimize_kwargs(kwargs)
 
-        return np.empty((0, len(bounds)))
+        return np.empty((n, len(bounds)))
 
     def tol(self, bounds) -> float:
         """Compute tolerance used to eliminate points that are too close to

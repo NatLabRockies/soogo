@@ -16,6 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
+import logging
+import warnings
 from typing import Callable, Optional
 
 import numpy as np
@@ -34,6 +36,8 @@ from ..acquisition import (
 from ..model import RbfModel, Surrogate
 from .utils import OptimizeResult
 from ..utils import find_pareto_front
+
+logger = logging.getLogger(__name__)
 
 
 def socemo(
@@ -62,8 +66,8 @@ def socemo(
     :param acquisitionFuncGlobal: Acquisition used in the global exploration
         step. Defaults to :class:`.WeightedAcquisition` with a space-filling
         sampler and weight pattern of ``0.95``.
-    :param disp: If True, print information about the optimization
-        process. The default is False.
+    :param disp: Deprecated and ignored. Configure logging via standard Python
+        logging levels instead.
     :param callback: If provided, the callback function will be called
         after each iteration with the current optimization result. The
         default is None.
@@ -77,8 +81,16 @@ def socemo(
         INFORMS Journal on Computing, 29(4):581-783, 2017.
         https://doi.org/10.1287/ijoc.2017.0749
     """
+    if disp:
+        warnings.warn(
+            "'disp' is deprecated and ignored; use logging levels instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
     dim = len(bounds)  # Dimension of the problem
-    assert dim > 0
+    if dim <= 0:
+        raise ValueError("bounds must define at least one dimension")
 
     # Random number generator
     rng = np.random.default_rng(seed)
@@ -92,7 +104,7 @@ def socemo(
         acquisitionFunc = CoordinatePerturbation(
             pool_size=min(500 * dim, 5000),
             sigma=BoundedParameter(0.1, 0.1 * 0.5**5, 0.1),
-            perturbation_probability=1.0,
+            perturbation_strategy="fixed",
             seed=rng.integers(np.iinfo(np.int32).max).item(),
         )
     if acquisitionFuncGlobal is None:
@@ -106,12 +118,17 @@ def socemo(
     out = OptimizeResult()
     out.init(fun, bounds, 0, maxeval, surrogateModel, seed=seed)
     out.init_best_values(surrogateModel)
-    assert isinstance(out.x, np.ndarray)
-    assert isinstance(out.fx, np.ndarray)
+    assert isinstance(out.x, np.ndarray), "Expected np.ndarray, got %s" % type(
+        out.fx
+    )
+    assert isinstance(out.fx, np.ndarray), (
+        "Expected np.ndarray, got %s" % type(out.fx)
+    )
 
     # Reserve space for the surrogate model to avoid repeated allocations
     objdim = out.nobj
-    assert objdim > 1
+    if objdim <= 1:
+        raise ValueError("SOCEMO requires at least two objectives.")
     surrogateModel.reserve(surrogateModel.ntrain + maxeval, dim, objdim)
 
     # Define acquisition functions
@@ -138,35 +155,29 @@ def socemo(
     ySelected = np.array(out.fsample[0 : out.nfev], copy=True)
     while out.nfev < maxeval:
         nMax = maxeval - out.nfev
-        if disp:
-            print("Iteration: %d" % out.nit)
-            print("fEvals: %d" % out.nfev)
+        logger.info("Iteration: %d", out.nit)
+        logger.info("fEvals: %d", out.nfev)
 
         # Update surrogate models
         t0 = time.time()
         if out.nfev > 0:
             surrogateModel.update(xselected, ySelected)
         tf = time.time()
-        if disp:
-            print("Time to update surrogate model: %f s" % (tf - t0))
+        logger.info("Time to update surrogate model: %f s", (tf - t0))
 
         #
         # 1. Define target values to fill gaps in the Pareto front
         #
         t0 = time.time()
         xselected = step1acquisition.optimize(
-            surrogateModel,
-            bounds,
-            n=1,
-            nondominated=out.x,
-            paretoFront=out.fx,
+            surrogateModel, bounds, n=1, xbest=out.x, ybest=out.fx
         )
         tf = time.time()
-        if disp:
-            print(
-                "Fill gaps in the Pareto front: %d points in %f s"
-                % (len(xselected), tf - t0)
-            )
+        logger.info(
+            "Fill gaps in the Pareto front: %d points in %f s",
+            len(xselected),
+            tf - t0,
+        )
 
         #
         # 2. Random perturbation of the currently nondominated points
@@ -176,16 +187,16 @@ def socemo(
             surrogateModel,
             bounds,
             n=nMax,
-            nondominated=out.x,
-            paretoFront=out.fx,
+            xbest=out.x,
+            ybest=out.fx,
         )
         xselected = np.concatenate((xselected, bestCandidates), axis=0)
         tf = time.time()
-        if disp:
-            print(
-                "Random perturbation of the currently nondominated points: %d points in %f s"
-                % (len(bestCandidates), tf - t0)
-            )
+        logger.info(
+            "Random perturbation of the currently nondominated points: %d points in %f s",
+            len(bestCandidates),
+            tf - t0,
+        )
 
         #
         # 3. Minimum point sampling to examine the endpoints of the Pareto front
@@ -205,11 +216,11 @@ def socemo(
             )
         xselected = np.concatenate((xselected, bestCandidates), axis=0)
         tf = time.time()
-        if disp:
-            print(
-                "Minimum point sampling: %d points in %f s"
-                % (len(bestCandidates), tf - t0)
-            )
+        logger.info(
+            "Minimum point sampling: %d points in %f s",
+            len(bestCandidates),
+            tf - t0,
+        )
 
         #
         # 4. Uniform random points and scoring
@@ -220,11 +231,11 @@ def socemo(
         )
         xselected = np.concatenate((xselected, bestCandidates), axis=0)
         tf = time.time()
-        if disp:
-            print(
-                "Uniform random points and scoring: %d points in %f s"
-                % (len(bestCandidates), tf - t0)
-            )
+        logger.info(
+            "Uniform random points and scoring: %d points in %f s",
+            len(bestCandidates),
+            tf - t0,
+        )
 
         #
         # 5. Solving the surrogate multiobjective problem
@@ -235,11 +246,11 @@ def socemo(
         )
         xselected = np.concatenate((xselected, bestCandidates), axis=0)
         tf = time.time()
-        if disp:
-            print(
-                "Solving the surrogate multiobjective problem: %d points in %f s"
-                % (len(bestCandidates), tf - t0)
-            )
+        logger.info(
+            "Solving the surrogate multiobjective problem: %d points in %f s",
+            len(bestCandidates),
+            tf - t0,
+        )
 
         #
         # 6. Discard selected points that are too close to each other
@@ -254,9 +265,8 @@ def socemo(
         else:
             ySelected = np.empty((0, objdim))
             out.nit = out.nit + 1
-            print(
-                "Acquisition function has failed to find a new sample! "
-                "Consider modifying it."
+            logger.warning(
+                "Acquisition function failed to find a new sample; consider modifying it."
             )
             break
 
@@ -266,7 +276,7 @@ def socemo(
 
         batchSize = min(len(xselected), maxeval - out.nfev)
         xselected.resize(batchSize, dim)
-        print("Number of new sample points: ", batchSize)
+        logger.info("Number of new sample points: %d", batchSize)
 
         # Compute f(xselected)
         ySelected = np.asarray(fun(xselected))
@@ -300,7 +310,6 @@ def socemo(
         if out.nfev > 0:
             surrogateModel.update(xselected, ySelected)
         tf = time.time()
-        if disp:
-            print("Time to update surrogate model: %f s" % (tf - t0))
+        logger.info("Time to update surrogate model: %f s", (tf - t0))
 
     return out

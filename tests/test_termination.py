@@ -178,7 +178,7 @@ class TestUnsuccessfulImprovement:
         out.fsample = np.array([[5.0, 6.0], [7.0, 8.0]])
         out.nobj = 2
 
-        with pytest.raises(AssertionError, match="single objective"):
+        with pytest.raises(ValueError, match="single objective"):
             condition.update(out)
 
     def test_zero_evaluations(self):

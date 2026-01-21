@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
+import logging
+import warnings
 from typing import Callable, Optional
 
 import numpy as np
@@ -29,6 +31,8 @@ from ..acquisition import (
 )
 from ..model import MedianLpfFilter, RbfModel, Surrogate
 from .utils import OptimizeResult
+
+logger = logging.getLogger(__name__)
 
 
 def surrogate_optimization(
@@ -99,7 +103,8 @@ def surrogate_optimization(
     :param performContinuousSearch: If True, the algorithm will perform a
         continuous search when a significant improvement is found by updating an
         integer variable.
-    :param disp: If True, print information about the optimization process.
+    :param disp: Deprecated and ignored. Configure logging via standard Python
+        logging levels instead.
     :param callback: If provided, the callback function will be called after
         each iteration with the current optimization result.
     :param seed: Seed or random number generator.
@@ -113,8 +118,16 @@ def surrogate_optimization(
     .. [#] Müller, J. MISO: mixed-integer surrogate optimization framework.
         Optim Eng 17, 177–203 (2016). https://doi.org/10.1007/s11081-015-9281-2
     """
+    if disp:
+        warnings.warn(
+            "'disp' is deprecated and ignored; use logging levels instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
     dim = len(bounds)  # Dimension of the problem
-    assert dim > 0
+    if dim <= 0:
+        raise ValueError("bounds must define at least one dimension")
 
     # Random number generator
     rng = np.random.default_rng(seed)
@@ -143,7 +156,9 @@ def surrogate_optimization(
     out = OptimizeResult()
     out.init(fun, bounds, batchSize, maxeval, surrogateModel, seed=seed)
     out.init_best_values(surrogateModel)
-    assert isinstance(out.x, np.ndarray)
+    assert isinstance(out.x, np.ndarray), "Expected np.ndarray, got %s" % type(
+        out.fx
+    )
 
     # Call the callback function
     if callback is not None:
@@ -153,10 +168,9 @@ def surrogate_optimization(
     xselected = np.array(out.sample[0 : out.nfev, :], copy=True)
     ySelected = np.array(out.fsample[0 : out.nfev], copy=True)
     while out.nfev < maxeval:
-        if disp:
-            print("Iteration: %d" % out.nit)
-            print("fEvals: %d" % out.nfev)
-            print("Best value: %f" % out.fx)
+        logger.info("Iteration: %d", out.nit)
+        logger.info("fEvals: %d", out.nfev)
+        logger.info("Best value: %f", out.fx)
 
         # number of new sample points in an iteration
         batchSize = min(batchSize, maxeval - out.nfev)
@@ -165,17 +179,15 @@ def surrogate_optimization(
         t0 = time.time()
         surrogateModel.update(xselected, ySelected)
         tf = time.time()
-        if disp:
-            print("Time to update surrogate model: %f s" % (tf - t0))
+        logger.info("Time to update surrogate model: %f s", (tf - t0))
 
         # Acquire new sample points
         t0 = time.time()
         xselected = acquisitionFunc.optimize(
-            surrogateModel, bounds, batchSize, xbest=out.x, ybest=out.fx
+            surrogateModel, bounds, n=batchSize, xbest=out.x, ybest=out.fx
         )
         tf = time.time()
-        if disp:
-            print("Time to acquire new sample points: %f s" % (tf - t0))
+        logger.info("Time to acquire new sample points: %f s", (tf - t0))
 
         # Compute f(xselected)
         if len(xselected) > 0:
@@ -184,9 +196,8 @@ def surrogate_optimization(
         else:
             ySelected = np.empty((0,))
             out.nit = out.nit + 1
-            print(
-                "Acquisition function has failed to find a new sample! "
-                "Consider modifying it."
+            logger.warning(
+                "Acquisition function has failed to find a new sample! Consider modifying it."
             )
             break
 
@@ -221,7 +232,6 @@ def surrogate_optimization(
         t0 = time.time()
         surrogateModel.update(xselected, ySelected)
         tf = time.time()
-        if disp:
-            print("Time to update surrogate model: %f s" % (tf - t0))
+        logger.info("Time to update surrogate model: %f s", (tf - t0))
 
     return out

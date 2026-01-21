@@ -21,6 +21,7 @@ from typing import Optional, Union, Tuple
 import warnings
 import numpy as np
 from math import comb
+import logging
 
 # Autograd imports
 from autograd import grad, hessian
@@ -32,6 +33,8 @@ from scipy.linalg import solve, ldl, solve_triangular
 # Local imports
 from .base import Surrogate
 from .rbf_kernel import RadialBasisFunction, CubicRadialBasisFunction
+
+logger = logging.getLogger(__name__)
 
 
 class RbfFilter:
@@ -102,11 +105,11 @@ class RbfModel(Surrogate):
 
     def __init__(
         self,
-        kernel: RadialBasisFunction = CubicRadialBasisFunction(),
+        kernel: Optional[RadialBasisFunction] = None,
         iindex: tuple[int, ...] = (),
         filter: Optional[RbfFilter] = None,
     ):
-        self.rbf = kernel
+        self.rbf = CubicRadialBasisFunction() if kernel is None else kernel
         self._iindex = iindex
         self.filter = RbfFilter() if filter is None else filter
 
@@ -247,7 +250,9 @@ class RbfModel(Surrogate):
         """
         dim = len(x)
         tail_size = self.polynomial_tail_size()
-        assert i < tail_size, "Index out of bounds for polynomial tail size."
+
+        if i >= tail_size:
+            raise IndexError("Index out of bounds for polynomial tail size.")
 
         xs = (x - self.shift) / self.scale
 
@@ -291,9 +296,8 @@ class RbfModel(Surrogate):
         coef0 = self._coef[0 : self._m]
         coef1 = self._coef[self._m : self._m + self.polynomial_tail_size()]
         if i >= 0:
-            assert i < self.ntarget, (
-                "Index out of bounds for target dimension."
-            )
+            if i >= self.ntarget or i < 0:
+                raise IndexError("Index out of bounds for target dimension.")
             if self.ntarget > 1:
                 coef0 = coef0[:, i]
                 coef1 = coef1[:, i]
@@ -402,7 +406,11 @@ class RbfModel(Surrogate):
         m = oldm + newm
 
         if oldm > 0:
-            assert dim == self.dim
+            if dim != self.dim:
+                raise ValueError(
+                    "Inconsistent dimensions between current training data (%d)"
+                    " and new data (%d)." % (self.dim, dim)
+                )
         if newm == 0:
             return
 
@@ -449,8 +457,14 @@ class RbfModel(Surrogate):
                 from numpy.linalg import cond
 
                 condA = cond(A)
-                print(f"Condition number of A: {condA}")
-                print(f"A.X: {self.X}")
+                dist_X = cdist(self.X, self.X)
+                np.fill_diagonal(dist_X, np.inf)
+                min_dist_in_x = np.min(dist_X)
+                logger.error(
+                    "RBF solve failed: cond(A)=%s; closest points distance=%s",
+                    condA,
+                    min_dist_in_x,
+                )
 
                 raise np.linalg.LinAlgError(
                     "Failed to solve the RBF model system. "
@@ -515,18 +529,15 @@ class RbfModel(Surrogate):
         else:
             return comb(self.dim + order, order)
 
-    def check_initial_design(self, sample: np.ndarray) -> bool:
-        """Check if the sample is able to generate a valid surrogate.
-
-        :param sample: m-by-d matrix with m training points in a d-dimensional
-            space.
-        """
-        if self.polynomial_tail_size() == 0:
-            return True
-        if len(sample) < 1:
-            return False
-        P = self.polynomial_tail(sample)
-        return np.linalg.matrix_rank(P) == P.shape[1]
+    def check_initial_design(self, sample: np.ndarray) -> int:
+        if len(sample) == 0:
+            return max(self.polynomial_tail_size(), 1)
+        else:
+            if self.polynomial_tail_size() == 0:
+                return 0
+            else:
+                P = self.polynomial_tail(sample)
+                return P.shape[1] - np.linalg.matrix_rank(P)
 
     @property
     def iindex(self) -> tuple[int, ...]:

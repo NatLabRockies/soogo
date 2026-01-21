@@ -18,6 +18,7 @@
 __authors__ = ["Weslley S. Pereira", "Byron Selvage"]
 
 import numpy as np
+from typing import Optional
 
 from pymoo.optimize import minimize as pymoo_minimize
 
@@ -65,7 +66,8 @@ class GosacSample(Acquisition):
         self,
         surrogateModel: Surrogate,
         bounds,
-        constr_fun=None,
+        constr=None,
+        exclusion_set: Optional[np.ndarray] = None,
         **kwargs,
     ) -> np.ndarray:
         """Acquire 1 point.
@@ -73,16 +75,18 @@ class GosacSample(Acquisition):
         :param surrogateModel: Multi-target surrogate model for the constraints.
         :param sequence bounds: List with the limits [x_min,x_max] of each
             direction x in the space.
-        :param constr_fun: Constraint function to be applied to surrogate model
+        :param constr: Constraint function to be applied to surrogate model
             predictions. If none is provided, use the surrogate model as
             the constraint function.
+        :param exclusion_set: Known points, if any, in addition to the ones
+            used to train the surrogate.
         :return: 1-by-dim matrix with the selected points.
         """
         dim = len(bounds)
         gdim = surrogateModel.ntarget
 
         # Report unused kwargs
-        super().report_unused_kwargs(kwargs)
+        super().report_unused_optimize_kwargs(kwargs)
 
         iindex = surrogateModel.iindex
         optimizer = self.optimizer if len(iindex) == 0 else self.mi_optimizer
@@ -91,7 +95,7 @@ class GosacSample(Acquisition):
             self.fun,
             bounds,
             iindex,
-            gfunc=surrogateModel if constr_fun is None else constr_fun,
+            gfunc=surrogateModel if constr is None else constr,
             n_ieq_constr=gdim,
         )
         res = pymoo_minimize(
@@ -102,8 +106,11 @@ class GosacSample(Acquisition):
         )
         if res.X is not None:
             xnew = np.asarray([[res.X[i] for i in range(dim)]])
-            return FarEnoughSampleFilter(surrogateModel.X, self.tol(bounds))(
-                xnew
+            exclusion_set = (
+                np.vstack((exclusion_set, surrogateModel.X))
+                if exclusion_set is not None
+                else surrogateModel.X
             )
+            return FarEnoughSampleFilter(exclusion_set, self.tol(bounds))(xnew)
         else:
             return np.empty((0, dim))

@@ -18,9 +18,9 @@
 __authors__ = ["Weslley S. Pereira"]
 
 import numpy as np
-from scipy.spatial.distance import cdist
 
 from .base import Acquisition
+from .utils import FarEnoughSampleFilter
 from .coordinate_perturbation import CoordinatePerturbation
 from ..model import Surrogate
 from ..utils import find_pareto_front
@@ -51,9 +51,10 @@ class CoordinatePerturbationOverNondominated(Acquisition):
     """
 
     def __init__(
-        self, acquisitionFunc: CoordinatePerturbation, **kwargs
+        self, acquisitionFunc: CoordinatePerturbation, seed=None, **kwargs
     ) -> None:
         self.acquisitionFunc = acquisitionFunc
+        self.rng = np.random.default_rng(seed)
         super().__init__(**kwargs)
 
     def optimize(
@@ -61,8 +62,8 @@ class CoordinatePerturbationOverNondominated(Acquisition):
         surrogateModel: Surrogate,
         bounds,
         n: int = 1,
-        nondominated=(),
-        paretoFront=(),
+        xbest=None,
+        ybest=None,
         **kwargs,
     ) -> np.ndarray:
         """Acquire k points, where k <= n.
@@ -71,49 +72,52 @@ class CoordinatePerturbationOverNondominated(Acquisition):
         :param sequence bounds: List with the limits [x_min,x_max] of each
             direction x in the space.
         :param n: Maximum number of points to be acquired.
-        :param nondominated: Nondominated set in the objective space.
-        :param paretoFront: Pareto front in the objective space.
+        :param xbest: Nondominated set in the objective space. If not
+            provided, use the surrogate to compute it.
+        :param ybest: Pareto front in the objective space. If not
+            provided, use the surrogate to compute it.
+        :return: k-by-dim matrix with the selected points.
         """
         dim = len(bounds)
         atol = self.acquisitionFunc.tol(bounds)
 
-        # Report unused kwargs
-        super().report_unused_kwargs(kwargs)
+        # Compute nondominated set and Pareto front if not provided
+        if xbest is None or ybest is None:
+            paretoFrontIdx = find_pareto_front(surrogateModel.Y)
+            ybest = surrogateModel.Y[paretoFrontIdx]
+            xbest = surrogateModel.X[paretoFrontIdx]
 
         # Find a collection of points that are close to the Pareto front
-        bestCandidates = np.empty((0, dim))
-        for ndpoint in nondominated:
-            x = self.acquisitionFunc.optimize(
-                surrogateModel, bounds, 1, xbest=ndpoint
+        bestCandidates = np.empty((len(xbest), dim))
+        for i, ndpoint in enumerate(xbest):
+            bestCandidates[i] = self.acquisitionFunc.optimize(
+                surrogateModel, bounds, n=1, xbest=ndpoint, **kwargs
             )
-            # Choose points that are not too close to previously selected points
-            if bestCandidates.size == 0:
-                if x.size > 0:
-                    bestCandidates = x.reshape(1, -1)
-            else:
-                distNeighborOfx = cdist(x, bestCandidates).min()
-                if distNeighborOfx >= atol:
-                    bestCandidates = np.concatenate(
-                        (bestCandidates, x), axis=0
-                    )
-
-        # Return if no point was found
-        if bestCandidates.size == 0:
-            return bestCandidates
 
         # Eliminate points predicted to be dominated
         fnondominatedAndBestCandidates = np.concatenate(
-            (paretoFront, surrogateModel(bestCandidates)), axis=0
+            (ybest, surrogateModel(bestCandidates)), axis=0
         )
         idxPredictedPareto = find_pareto_front(
             fnondominatedAndBestCandidates,
-            iStart=len(nondominated),
+            iStart=len(xbest),
         )
         idxPredictedBest = [
-            i - len(nondominated)
-            for i in idxPredictedPareto
-            if i >= len(nondominated)
+            i - len(xbest) for i in idxPredictedPareto if i >= len(xbest)
         ]
         bestCandidates = bestCandidates[idxPredictedBest, :]
 
-        return bestCandidates[:n, :]
+        # Eliminate points that are too close to one another. No need to use
+        # known points since the CoordinatePerturbation acquisition already
+        # guarantees points are far enough from them
+        bestCandidates = FarEnoughSampleFilter(np.empty((0, dim)), atol)(
+            bestCandidates
+        )
+
+        # Scramble candidates
+        bestCandidates = bestCandidates[
+            self.rng.permutation(len(bestCandidates)), :
+        ]
+
+        # Return at most n points
+        return bestCandidates[: min(n, len(bestCandidates))]

@@ -68,8 +68,8 @@ class MockSurrogateModel(Surrogate):
     def min_design_space_size(self, dim: int) -> int:
         return 1
 
-    def check_initial_design(self, sample: np.ndarray) -> bool:
-        return True
+    def check_initial_design(self, sample: np.ndarray) -> int:
+        return 0
 
     def eval_kernel(
         self, x: np.ndarray, y: Optional[np.ndarray] = None
@@ -124,8 +124,8 @@ class MockEvaluabilitySurrogate(Surrogate):
     def min_design_space_size(self, dim: int) -> int:
         return 1
 
-    def check_initial_design(self, sample: np.ndarray) -> bool:
-        return True
+    def check_initial_design(self, sample: np.ndarray) -> int:
+        return 0
 
     def eval_kernel(
         self, x: np.ndarray, y: Optional[np.ndarray] = None

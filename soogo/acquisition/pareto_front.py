@@ -21,6 +21,7 @@ __authors__ = ["Weslley S. Pereira"]
 import numpy as np
 from scipy.spatial import KDTree
 from scipy.optimize import differential_evolution
+from typing import Optional
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.core.mixed import MixedVariableGA, MixedVariableMating
@@ -115,7 +116,7 @@ class ParetoFront(Acquisition):
 
         # Create a surrogate model for the Pareto front in the objective space
         paretoModel = RbfModel(LinearRadialBasisFunction())
-        k = np.random.choice(objdim)
+        k = self.rng.choice(objdim)
         paretoModel.update(
             np.array([paretoFront[:, i] for i in range(objdim) if i != k]).T,
             paretoFront[:, k],
@@ -155,8 +156,9 @@ class ParetoFront(Acquisition):
         surrogateModel: Surrogate,
         bounds,
         n: int = 1,
-        nondominated=(),
-        paretoFront=(),
+        xbest=None,
+        ybest=None,
+        exclusion_set: Optional[np.ndarray] = None,
         **kwargs,
     ) -> np.ndarray:
         """Acquire k points, where k <= n.
@@ -167,47 +169,56 @@ class ParetoFront(Acquisition):
         :param sequence bounds: List with the limits [x_min,x_max] of each
             direction x in the space.
         :param n: Number of points to be acquired.
-        :param nondominated: Nondominated set in the objective space.
-        :param paretoFront: Pareto front in the objective space. If not
+        :param xbest: Nondominated set in the objective space. If not
             provided, use the surrogate to compute it.
+        :param ybest: Pareto front in the objective space. If not
+            provided, use the surrogate to compute it.
+        :param exclusion_set: Known points, if any, in addition to the ones
+            used to train the surrogate.
         :return: k-by-dim matrix with the selected points.
         """
         dim = len(bounds)
         objdim = surrogateModel.ntarget
 
         # Report unused kwargs
-        super().report_unused_kwargs(kwargs)
+        super().report_unused_optimize_kwargs(kwargs)
 
         iindex = surrogateModel.iindex
         optimizer = self.optimizer if len(iindex) == 0 else self.mi_optimizer
 
-        if len(paretoFront) == 0:
+        # Compute nondominated set and Pareto front if not provided
+        if xbest is None or ybest is None:
             paretoFrontIdx = find_pareto_front(surrogateModel.Y)
-            paretoFront = surrogateModel.Y[paretoFrontIdx]
-            nondominated = surrogateModel.X[paretoFrontIdx]
+            ybest = surrogateModel.Y[paretoFrontIdx]
+            xbest = surrogateModel.X[paretoFrontIdx]
 
         # If the Pareto front has only one point or is empty, there is no
         # way to find a target value.
-        if len(paretoFront) <= 1:
+        if len(ybest) <= 1:
             return np.empty((0, dim))
 
-        filter = FarEnoughSampleFilter(surrogateModel.X, self.tol(bounds))
+        exclusion_set = (
+            np.vstack((exclusion_set, surrogateModel.X))
+            if exclusion_set is not None
+            else surrogateModel.X
+        )
+        filter = FarEnoughSampleFilter(exclusion_set, self.tol(bounds))
 
         xselected = np.empty((0, dim))
         for i in range(n):
             # Find a target value tau in the Pareto front
-            tau = self.pareto_front_target(np.asarray(paretoFront))
+            tau = self.pareto_front_target(np.asarray(ybest))
             self.oldTV = np.concatenate(
                 (self.oldTV.reshape(-1, objdim), [tau]), axis=0
             )
 
             # Use non-dominated points if provided
-            if len(nondominated) > 0:
+            if len(xbest) > 0:
                 Xinit = (
-                    nondominated
+                    xbest
                     if len(iindex) == 0
                     else np.array(
-                        [{i: x[i] for i in range(dim)} for x in nondominated]
+                        [{i: x[i] for i in range(dim)} for x in xbest]
                     )
                 )
                 optimizer.initialization = Initialization(
@@ -249,12 +260,12 @@ class ParetoFront(Acquisition):
                 # Find the values that are expected to be in the Pareto front
                 # of the original optimization problem
                 nondominated_idx = find_pareto_front(
-                    np.vstack((paretoFront, sx)), iStart=len(paretoFront)
+                    np.vstack((ybest, sx)), iStart=len(ybest)
                 )
                 nondominated_idx = [
-                    idx - len(paretoFront)
+                    idx - len(ybest)
                     for idx in nondominated_idx
-                    if idx >= len(paretoFront)
+                    if idx >= len(ybest)
                 ]
 
                 # Add a point that is expected to be non-dominated

@@ -18,6 +18,8 @@
 
 from copy import deepcopy
 from typing import Callable, Optional
+import logging
+import warnings
 
 import numpy as np
 
@@ -26,6 +28,8 @@ from ..model import Surrogate
 from .utils import OptimizeResult
 from ..termination import RobustCondition, UnsuccessfulImprovement
 from .surrogate_optimization import surrogate_optimization
+
+logger = logging.getLogger(__name__)
 
 
 def multistart_msrs(
@@ -58,7 +62,8 @@ def multistart_msrs(
         updated. If None is provided, :func:`.surrogate_optimization()` will
         choose a default model.
     :param batchSize: Number of new sample points to be generated per iteration.
-    :param disp: If True, print information about the optimization process.
+    :param disp: Deprecated and ignored. Configure logging instead using
+        standard Python logging levels.
     :param callback: If provided, the callback function will be called after
         each iteration with the current optimization result.
     :param seed: Seed or random number generator.
@@ -70,8 +75,16 @@ def multistart_msrs(
         function method for the global optimization of expensive functions.
         INFORMS Journal on Computing, 19(4):497–509, 2007.
     """
+    if disp:
+        warnings.warn(
+            "'disp' is deprecated and ignored; use logging levels instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
     dim = len(bounds)  # Dimension of the problem
-    assert dim > 0
+    if dim <= 0:
+        raise ValueError("bounds must define at least one dimension")
 
     # Initialize output
     out = OptimizeResult()
@@ -90,7 +103,7 @@ def multistart_msrs(
     while out.nfev < maxeval:
         # Acquisition function
         acquisitionFunc = CoordinatePerturbation(
-            perturbation_probability=1.0,
+            perturbation_strategy="fixed",
             pool_size=min(1000 * dim, 10000),
             weightpattern=(0.95,),
             termination=RobustCondition(
@@ -109,12 +122,12 @@ def multistart_msrs(
             surrogateModel=_surrogateModel,
             acquisitionFunc=acquisitionFunc,
             batchSize=batchSize,
-            disp=disp,
             callback=callback,
             seed=rng.integers(np.iinfo(np.int32).max).item(),
         )
-        assert isinstance(out_local.x, np.ndarray)
-        assert isinstance(out_local.fx, float)
+        assert isinstance(out_local.fx, float), (
+            "Expected float, got %s" % type(out_local.fx)
+        )
 
         # Update output
         if out_local.fx < out.fx:

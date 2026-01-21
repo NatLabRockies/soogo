@@ -21,6 +21,7 @@ __authors__ = ["Weslley S. Pereira"]
 import numpy as np
 from scipy.optimize import differential_evolution
 from scipy.linalg import cholesky, solve_triangular
+from typing import Optional
 
 from .base import Acquisition
 from ..model import GaussianProcess
@@ -92,6 +93,7 @@ class MaximizeEI(Acquisition):
         bounds,
         n: int = 1,
         ybest=None,
+        exclusion_set: Optional[np.ndarray] = None,
         **kwargs,
     ) -> np.ndarray:
         """Acquire n points.
@@ -110,12 +112,17 @@ class MaximizeEI(Acquisition):
         :param n: Number of points to be acquired.
         :param ybest: Best objective value so far. If ``None``, approximately
             minimize the surrogate and use its value.
+        :param exclusion_set: Known points, if any, in addition to the ones
+            used to train the surrogate.
         """
         # TODO: Extend this method to work with mixed-integer problems
-        assert len(surrogateModel.iindex) == 0
+        if len(surrogateModel.iindex) > 0:
+            raise ValueError(
+                "MaximizeEI acquisition only works for continuous problems."
+            )
 
         # Report unused kwargs
-        super().report_unused_kwargs(kwargs)
+        super().report_unused_optimize_kwargs(kwargs)
 
         if n == 0:
             return np.empty((0, len(bounds)))
@@ -148,16 +155,20 @@ class MaximizeEI(Acquisition):
 
         # Generate the complete pool of candidates
         pool_size = self.pool_size
-        current_sample = surrogateModel.X
+        exclusion_set = (
+            np.vstack((exclusion_set, surrogateModel.X))
+            if exclusion_set is not None
+            else surrogateModel.X
+        )
         if xs is not None:
-            current_sample = np.concatenate((current_sample, [xs]), axis=0)
+            exclusion_set = np.concatenate((exclusion_set, [xs]), axis=0)
             pool_size -= 1
         if xbest is not None:
-            current_sample = np.concatenate((current_sample, [xbest]), axis=0)
+            exclusion_set = np.concatenate((exclusion_set, [xbest]), axis=0)
             pool_size -= 1
         x = (
             self.sampler.generate(
-                self.pool_size, bounds, current_sample=current_sample
+                self.pool_size, bounds, current_sample=exclusion_set
             )
             if pool_size > 0
             else np.empty((0, len(bounds)))
@@ -251,7 +262,6 @@ class MaximizeEI(Acquisition):
 
                     # Final score
                     score[i] = ((scorei - scoreb) / nCand) * eiCand[i]
-                    # assert(score[i] >= 0)
 
             iBest[j] = np.argmax(score)
             eiCand[iBest[j]] = 0.0  # Remove this candidate expectancy

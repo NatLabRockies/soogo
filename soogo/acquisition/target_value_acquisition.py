@@ -18,6 +18,8 @@
 __authors__ = ["Weslley S. Pereira"]
 
 import numpy as np
+import logging
+from typing import Optional
 
 from pymoo.optimize import minimize as pymoo_minimize
 from pymoo.termination.default import DefaultSingleObjectiveTermination
@@ -26,6 +28,8 @@ from .base import Acquisition
 from ..model import RbfModel
 from ..integrations.pymoo import PymooProblem
 from .utils import FarEnoughSampleFilter
+
+logger = logging.getLogger(__name__)
 
 
 class TargetValueAcquisition(Acquisition):
@@ -132,9 +136,7 @@ class TargetValueAcquisition(Acquisition):
             the function values and avoid overflow.
         """
         absmu = surrogate.mu_measure(x)
-        assert all(
-            absmu > 0
-        )  # if absmu == 0, the linear system in the surrogate model is singular
+        assert all(absmu > 0), "mu_measure must be positive; got %s" % absmu
 
         # predict RBF value of x
         yhat = surrogate(x)
@@ -145,29 +147,73 @@ class TargetValueAcquisition(Acquisition):
         # Compute bumpiness measure
         return np.where(absmu < np.inf, (absmu * dist) * dist, np.inf)
 
+    def min_of_surrogate(self, surrogateModel: RbfModel, bounds):
+        """Find the minimum of the surrogate model using the internal
+        optimizer.
+
+        :param surrogateModel: Surrogate model.
+        :param sequence bounds: List with the limits [x_min,x_max] of each
+            direction x in the space.
+        :return: x_rbf, f_rbf - point and value of the minimum found, or the
+            best training point if the minimization fails.
+        """
+        dim = len(bounds)  # Dimension of the problem
+        iindex = surrogateModel.iindex
+        optimizer = self.optimizer if len(iindex) == 0 else self.mi_optimizer
+        f_rbf = None
+
+        problem = PymooProblem(surrogateModel, bounds, iindex)
+        res = pymoo_minimize(
+            problem,
+            optimizer,
+            seed=self.rng.integers(np.iinfo(np.int32).max, size=1).item(),
+            verbose=False,
+        )
+
+        if res.X is not None and res.F is not None:
+            x_rbf = np.asarray([res.X[i] for i in range(dim)])
+            f_rbf = res.F[0]
+
+        if f_rbf is None:
+            logger.warning(
+                "Surrogate model minimization failed; "
+                "using best training point."
+            )
+            idx = surrogateModel.Y.argmin()
+            x_rbf = surrogateModel.X[idx]
+            f_rbf = surrogateModel.Y[idx]
+
+        return x_rbf, f_rbf
+
     def optimize(
         self,
         surrogateModel: RbfModel,
         bounds,
         n: int = 1,
-        sampleStage: int = -1,
+        exclusion_set: Optional[np.ndarray] = None,
         **kwargs,
     ) -> np.ndarray:
-        """Acquire n points following the algorithm from Holmström et al.(2008).
+        """Acquire k <= n points following the algorithm from
+        Holmström et al. (2008).
 
         :param surrogateModel: Surrogate model.
         :param sequence bounds: List with the limits [x_min,x_max] of each
             direction x in the space.
         :param n: Number of points to be acquired.
-        :param sampleStage: Stage of the sampling process. The default is -1,
-            which means that the stage is not specified.
-        :return: n-by-dim matrix with the selected points.
+        :param exclusion_set: Known points, if any, in addition to the ones
+            used to train the surrogate.
+        :return: k-by-dim matrix with the selected points.
         """
         dim = len(bounds)  # Dimension of the problem
-        assert n <= self.cycleLength + 2
+
+        if n > self.cycleLength + 2:
+            raise ValueError(
+                f"n ({n}) must be less than or equal to "
+                f"cycleLength + 2 ({self.cycleLength + 2})"
+            )
 
         # Report unused kwargs
-        super().report_unused_kwargs(kwargs)
+        super().report_unused_optimize_kwargs(kwargs)
 
         iindex = surrogateModel.iindex
         optimizer = self.optimizer if len(iindex) == 0 else self.mi_optimizer
@@ -183,18 +229,15 @@ class TargetValueAcquisition(Acquisition):
             target_range = 1
 
         # Allocate variables a priori targeting batched sampling
-        x = np.empty((n, dim))
+        x = []
         mu_measure_is_prepared = False
         x_rbf = None
         f_rbf = None
 
         # Loop following Holmström (2008)
         for i in range(n):
-            if sampleStage >= 0:
-                sample_stage = sampleStage
-            else:
-                sample_stage = self._cycle
-                self._cycle = (self._cycle + 1) % (self.cycleLength + 2)
+            sample_stage = self._cycle
+            self._cycle = (self._cycle + 1) % (self.cycleLength + 2)
             if sample_stage == 0:  # InfStep - minimize Mu_n
                 if not mu_measure_is_prepared:
                     surrogateModel.prepare_mu_measure()
@@ -212,28 +255,17 @@ class TargetValueAcquisition(Acquisition):
                     verbose=False,
                 )
 
-                assert res.X is not None
-                xselected = np.asarray([res.X[i] for i in range(dim)])
+                if res.X is not None:
+                    x.append([res.X[i] for i in range(dim)])
 
             elif (
                 1 <= sample_stage <= self.cycleLength
             ):  # cycle step global search
                 # find min of surrogate model
                 if f_rbf is None:
-                    problem = PymooProblem(surrogateModel, bounds, iindex)
-                    res = pymoo_minimize(
-                        problem,
-                        optimizer,
-                        seed=self.rng.integers(
-                            np.iinfo(np.int32).max, size=1
-                        ).item(),
-                        verbose=False,
+                    x_rbf, f_rbf = self.min_of_surrogate(
+                        surrogateModel, bounds
                     )
-                    assert res.X is not None
-                    assert res.F is not None
-
-                    x_rbf = np.asarray([res.X[i] for i in range(dim)])
-                    f_rbf = res.F[0]
 
                 wk = (
                     1 - (sample_stage - 1) / self.cycleLength
@@ -263,27 +295,15 @@ class TargetValueAcquisition(Acquisition):
                     verbose=False,
                 )
 
-                assert res.X is not None
-                xselected = np.asarray([res.X[i] for i in range(dim)])
+                if res.X is not None:
+                    x.append([res.X[i] for i in range(dim)])
             else:  # cycle step local search
                 # find the minimum of RBF surface
                 if f_rbf is None:
-                    problem = PymooProblem(surrogateModel, bounds, iindex)
-                    res = pymoo_minimize(
-                        problem,
-                        optimizer,
-                        seed=self.rng.integers(
-                            np.iinfo(np.int32).max, size=1
-                        ).item(),
-                        verbose=False,
+                    x_rbf, f_rbf = self.min_of_surrogate(
+                        surrogateModel, bounds
                     )
-                    assert res.X is not None
-                    assert res.F is not None
 
-                    x_rbf = np.asarray([res.X[i] for i in range(dim)])
-                    f_rbf = res.F[0]
-
-                xselected = x_rbf
                 if f_rbf > (
                     fbounds[0]
                     - 1e-6 * (abs(fbounds[0]) if fbounds[0] != 0 else 1)
@@ -312,9 +332,16 @@ class TargetValueAcquisition(Acquisition):
                         verbose=False,
                     )
 
-                    assert res.X is not None
-                    xselected = np.asarray([res.X[i] for i in range(dim)])
+                    if res.X is not None:
+                        x_rbf = np.asarray([res.X[i] for i in range(dim)])
 
-            x[i, :] = xselected
+                x.append(x_rbf)
 
-        return FarEnoughSampleFilter(surrogateModel.X, self.tol(bounds))(x)
+        exclusion_set = (
+            np.vstack((exclusion_set, surrogateModel.X))
+            if exclusion_set is not None
+            else surrogateModel.X
+        )
+        return FarEnoughSampleFilter(exclusion_set, self.tol(bounds))(
+            np.array(x)
+        )

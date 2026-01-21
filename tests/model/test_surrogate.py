@@ -57,7 +57,7 @@ def test_surrogate_interface_methods():
     assert rbf.X.shape == (3, 2)
     assert rbf.Y.shape == (3,)
     assert rbf.min_design_space_size(2) > 0
-    assert rbf.check_initial_design(x_train)
+    assert rbf.check_initial_design(x_train) == 0
     assert isinstance(rbf.iindex, tuple)
 
     # Test prediction
@@ -75,7 +75,7 @@ def test_surrogate_interface_methods():
     assert gp.X.shape == (3, 2)
     assert gp.Y.shape == (3,)
     assert gp.min_design_space_size(2) >= 0
-    assert gp.check_initial_design(x_train)
+    assert gp.check_initial_design(x_train) == 0
     assert isinstance(gp.iindex, tuple)
 
     # Test prediction

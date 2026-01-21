@@ -16,6 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from typing import Callable, Optional
+import logging
+import warnings
 
 import numpy as np
 from scipy.optimize import minimize
@@ -31,6 +33,9 @@ from ..model import MedianLpfFilter, RbfModel
 from .utils import OptimizeResult
 from ..termination import RobustCondition, UnsuccessfulImprovement
 from .surrogate_optimization import surrogate_optimization
+from ..utils import report_unused_kwargs
+
+logger = logging.getLogger(__name__)
 
 
 def cptv(
@@ -86,7 +91,8 @@ def cptv(
     :param useLocalSearch: If True, the algorithm will perform a continuous
         local search when a significant improvement is not found in a sequence
         of (CP,TV,CP) steps.
-    :param disp: If True, print information about the optimization process.
+    :param disp: Deprecated and ignored. Configure logging instead using
+        standard Python logging levels.
     :param callback: If provided, the callback function will be called after
         each iteration with the current optimization result.
     :param seed: Seed or random number generator.
@@ -97,8 +103,16 @@ def cptv(
     .. [#] Müller, J. MISO: mixed-integer surrogate optimization framework.
         Optim Eng 17, 177–203 (2016). https://doi.org/10.1007/s11081-015-9281-2
     """
+    if disp:
+        warnings.warn(
+            "'disp' is deprecated and ignored; use logging levels instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
     dim = len(bounds)  # Dimension of the problem
-    assert dim > 0
+    if dim <= 0:
+        raise ValueError("bounds must define at least one dimension")
 
     # Random number generator
     rng = np.random.default_rng(seed)
@@ -156,8 +170,8 @@ def cptv(
             if out.nfev > 0:
                 # DDS params
                 acquisitionFunc.sigma.value = acquisitionFunc.sigma.max
-                if acquisitionFunc.dynamic_perturbation_probability:
-                    acquisitionFunc.perturbation_probability = 1.0
+                if acquisitionFunc.perturbation_strategy == "dycors":
+                    acquisitionFunc._perturbation_probability = 1.0
 
                 # Local search params
                 acquisitionFunc.remainingCountinuousSearch = 0
@@ -188,13 +202,13 @@ def cptv(
                 maxeval - out.nfev,
                 surrogateModel=surrogateModel,
                 acquisitionFunc=acquisitionFunc,
-                disp=disp,
                 seed=rng.integers(np.iinfo(np.int32).max).item(),
             )
-            assert isinstance(out_local.fx, float)
+            assert isinstance(out_local.fx, float), (
+                "Expected float, got %s" % type(out_local.fx)
+            )
 
-            if disp:
-                print("CP step ended after ", out_local.nfev, "f evals.")
+            logger.info("CP step ended after %d f evals.", out_local.nfev)
 
             # Switch method
             if useLocalSearch:
@@ -226,13 +240,13 @@ def cptv(
                 maxeval - out.nfev,
                 surrogateModel=surrogateModel,
                 acquisitionFunc=tv_acquisition,
-                disp=disp,
                 seed=rng.integers(np.iinfo(np.int32).max).item(),
             )
-            assert isinstance(out_local.fx, float)
+            assert isinstance(out_local.fx, float), (
+                "Expected float, got %s" % type(out_local.fx)
+            )
 
-            if disp:
-                print("TV step ended after ", out_local.nfev, "f evals.")
+            logger.info("TV step ended after %d f evals.", out_local.nfev)
 
             # Switch method and update counter for local search
             method = 0
@@ -281,8 +295,7 @@ def cptv(
                     out_local.x.reshape(1, -1), [out_local.fx]
                 )
 
-            if disp:
-                print("Local step ended after ", out_local.nfev, "f evals.")
+            logger.info("Local step ended after %d f evals.", out_local.nfev)
 
             # Switch method
             method = 0
@@ -318,9 +331,8 @@ def cptv(
 def cptvl(*args, **kwargs) -> OptimizeResult:
     """Wrapper to cptv. See :func:`.cptv()`."""
     if "useLocalSearch" in kwargs:
-        assert kwargs["useLocalSearch"] is True, (
-            "`useLocalSearch` must be True for `cptvl`."
+        report_unused_kwargs(
+            "cptvl", {"useLocalSearch": kwargs["useLocalSearch"]}
         )
-    else:
-        kwargs["useLocalSearch"] = True
+    kwargs["useLocalSearch"] = True
     return cptv(*args, **kwargs)

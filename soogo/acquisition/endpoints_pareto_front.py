@@ -21,6 +21,7 @@ __authors__ = ["Weslley S. Pereira"]
 
 
 import numpy as np
+from typing import Optional
 
 from pymoo.optimize import minimize as pymoo_minimize
 
@@ -62,6 +63,7 @@ class EndPointsParetoFront(Acquisition):
         self,
         surrogateModel: Surrogate,
         bounds,
+        exclusion_set: Optional[np.ndarray] = None,
         **kwargs,
     ) -> np.ndarray:
         """Acquire k points at most, where k <= objdim.
@@ -69,13 +71,15 @@ class EndPointsParetoFront(Acquisition):
         :param surrogateModel: Multi-target surrogate model.
         :param sequence bounds: List with the limits [x_min,x_max] of each
             direction x in the space.
+        :param exclusion_set: Known points, if any, in addition to the ones
+            used to train the surrogate.
         :return: k-by-dim matrix with the selected points.
         """
         dim = len(bounds)
         objdim = surrogateModel.ntarget
 
         # Report unused kwargs
-        super().report_unused_kwargs(kwargs)
+        super().report_unused_optimize_kwargs(kwargs)
 
         iindex = surrogateModel.iindex
         optimizer = self.optimizer if len(iindex) == 0 else self.mi_optimizer
@@ -95,6 +99,11 @@ class EndPointsParetoFront(Acquisition):
             if res.X is not None:
                 endpoints = np.vstack((endpoints, res.X.reshape(1, -1)))
 
-        return FarEnoughSampleFilter(surrogateModel.X, self.tol(bounds))(
+        exclusion_set = (
+            np.vstack((exclusion_set, surrogateModel.X))
+            if exclusion_set is not None
+            else surrogateModel.X
+        )
+        return FarEnoughSampleFilter(exclusion_set, self.tol(bounds))(
             endpoints
         )

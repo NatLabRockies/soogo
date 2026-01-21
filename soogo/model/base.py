@@ -105,7 +105,9 @@ class Surrogate(ABC):
         if self.X.ndim == 2:
             return self.X.shape[1]
         else:
-            assert self.X.size == 0
+            assert self.X.size == 0, (
+                "Unexpected shape for X: %s" % self.X.shape
+            )
             return 0
 
     @property
@@ -135,12 +137,12 @@ class Surrogate(ABC):
         pass
 
     @abstractmethod
-    def check_initial_design(self, sample: np.ndarray) -> bool:
-        """Check if the sample is able to generate a valid surrogate.
+    def check_initial_design(self, sample: np.ndarray) -> int:
+        """Returns an estimate on how many points need to be added to sample
+        so that the design is sufficient to build a surrogate.
 
         :param sample: m-by-d matrix with m training points in a
             d-dimensional space.
-        :return: True if the sample is valid for building the surrogate model.
         """
         pass
 

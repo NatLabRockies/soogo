@@ -17,6 +17,7 @@
 
 import time
 import warnings
+import logging
 from typing import Callable, Optional
 
 import numpy as np
@@ -38,8 +39,11 @@ from ..model import (
     MedianLpfFilter,
 )
 from .utils import OptimizeResult, evaluate_and_log_point
+from ..sampling import SpaceFillingSampler
 from ..termination import IterateNTimes
 from ..integrations.nomad import NomadProblem
+
+logger = logging.getLogger(__name__)
 
 try:
     import PyNomad
@@ -79,10 +83,10 @@ def shebo(
         Each call provides the surrogate objective model, bounds, and the
         requested number of points as positional arguments, and may pass
         keywords such as ``points`` (existing sample), ``mu`` (best point),
-        ``constr_fun`` (feasibility function), and
+        ``constr`` (feasibility function), and
         ``perturbation_probability`` (for DDS-like samplers).
-    :param disp: If True, print information about the optimization process. The
-        default is False.
+    :param disp: Deprecated and ignored. Configure logging via standard Python
+        logging levels instead.
     :param callback: If provided, the callback function will be called after
         each iteration with the current optimization result. The default is
         None.
@@ -96,6 +100,12 @@ def shebo(
         INFORMS Journal on Computing, 31(4):689-702, 2019.
         https://doi.org/10.1287/ijoc.2018.0864
     """
+    if disp:
+        warnings.warn(
+            "'disp' is deprecated and ignored; use logging levels instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     # Check that required PyNomad package is available
     if PyNomad is None:
         warnings.warn(
@@ -107,7 +117,9 @@ def shebo(
     rng = np.random.default_rng(seed)
 
     dim = len(bounds)  # Dimension of the problem
-    assert dim > 0
+    if dim <= 0:
+        raise ValueError("bounds must define at least one dimension")
+
     rtol = 1e-3  # Relative tolerance for distance-based operations
     return_surrogate = (objSurrogate is not None) or (
         evalSurrogate is not None
@@ -139,6 +151,9 @@ def shebo(
                         ),
                         CoordinatePerturbation(
                             sampling_strategy="dds_uniform",
+                            perturbation_strategy=(
+                                "random" if dim > 10 else "fixed"
+                            ),
                             sigma=0.2,
                             pool_size=min(1000 * dim, 5000),
                             weightpattern=[
@@ -215,7 +230,9 @@ def shebo(
 
     # Initialize best values in out
     out.init_best_values(objSurrogate)
-    assert isinstance(out.x, np.ndarray)
+    assert isinstance(out.x, np.ndarray), "Expected np.ndarray, got %s" % type(
+        out.fx
+    )
 
     # Call the callback function with the current optimization result
     if callback is not None:
@@ -224,31 +241,37 @@ def shebo(
     # Keep adding points until there is a sufficient initial design for
     # the objective surrogate
     if objSurrogate.ntrain == 0:
-        while not objSurrogate.check_initial_design(
+        sampler = SpaceFillingSampler(
+            seed=rng.integers(np.iinfo(np.int32).max).item()
+        )
+        n_points_to_add = objSurrogate.check_initial_design(
             out.sample[: out.nfev][np.isfinite(out.fsample[: out.nfev])]
-        ) and (out.nfev < maxeval):
-            if disp:
-                print(
-                    "Iteration: %d (Objective surrogate under construction)"
-                    % out.nit
-                )
-                print("fEvals: %d" % out.nfev)
-                print(
-                    "Number of feasible points: %d"
-                    % np.sum(np.isfinite(out.fsample[: out.nfev]))
-                )
+        )
+        while (n_points_to_add > 0) and (out.nfev < maxeval):
+            logger.info(
+                "Iteration: %d (Objective surrogate under construction)",
+                out.nit,
+            )
+            logger.info("fEvals: %d", out.nfev)
+            logger.info(
+                "Number of feasible points: %d",
+                np.sum(np.isfinite(out.fsample[: out.nfev])),
+            )
 
-                dist = cdist(out.sample[: out.nfev], out.sample[: out.nfev])
-                dist += np.eye(out.nfev) * np.max(dist)
-                print(
-                    "Max distance between neighbors: %f"
-                    % np.max(np.min(dist, axis=1))
-                )
-                print(f"Last sampled point: {out.sample[out.nfev - 1]}")
+            dist = cdist(out.sample[: out.nfev], out.sample[: out.nfev])
+            dist += np.eye(out.nfev) * np.max(dist)
+            logger.info(
+                "Max distance between neighbors: %f",
+                np.max(np.min(dist, axis=1)),
+            )
+            logger.info("Last sampled point: %s", out.sample[out.nfev - 1])
 
             # Acquire new sample point
-            xNew = maxDistAcq.optimize(
-                objSurrogate, bounds, points=out.sample[: out.nfev]
+            xNew = sampler.generate(
+                min(n_points_to_add, maxeval - out.nfev),
+                bounds,
+                current_sample=out.sample[: out.nfev],
+                iindex=objSurrogate.iindex,
             )
 
             # Compute f(xNew) and update out
@@ -260,6 +283,11 @@ def shebo(
             if callback is not None:
                 callback(out)
 
+            # Recompute number of points to add
+            n_points_to_add = objSurrogate.check_initial_design(
+                out.sample[: out.nfev][np.isfinite(out.fsample[: out.nfev])]
+            )
+
     # Prepare for the main optimization loop
     #
     # - At this point, we have enough points to build both surrogates
@@ -270,10 +298,9 @@ def shebo(
 
     # do until max number of f-evals reached or local min found
     while out.nfev < maxeval:
-        if disp:
-            print("Iteration: %d" % out.nit)
-            print("fEvals: %d" % out.nfev)
-            print("Best value: %f" % out.fx)
+        logger.info("Iteration: %d", out.nit)
+        logger.info("fEvals: %d", out.nfev)
+        logger.info("Best value: %f", out.fx)
 
         # Update surrogate models
         t0 = time.time()
@@ -284,36 +311,27 @@ def shebo(
                 xselected[feasible_idx], ySelected[feasible_idx]
             )
         tf = time.time()
-        if disp:
-            print("Time to update surrogate model: %f s" % (tf - t0))
+        logger.info("Time to update surrogate model: %f s", (tf - t0))
 
         # Calculate the threshold for evaluability
         threshold = float(
             np.log(max(1, out.nfev - nStart + 1)) / np.log(maxeval - nStart)
         )
 
-        # Set perturbation probability
-        if dim <= 10:
-            perturbProbability = 1.0
-        else:
-            perturbProbability = np.random.uniform(0, 1)
-
         # Acquire new sample points
         t0 = time.time()
         xselected = acquisitionFunc.optimize(
             objSurrogate,
             bounds,
-            1,
-            points=evalSurrogate.X,
-            mu=out.x,
-            constr_fun=lambda x: threshold - evalSurrogate(x),
-            perturbation_probability=perturbProbability,
+            n=1,
+            exclusion_set=evalSurrogate.X[evalSurrogate.Y == 0],
+            xbest=out.x,
+            constr=lambda x: threshold - evalSurrogate(x),
         )
         if len(xselected) == 0:
             threshold = float(np.finfo(float).eps)
         tf = time.time()
-        if disp:
-            print("Time to acquire new sample points: %f s" % (tf - t0))
+        logger.info("Time to acquire new sample points: %f s", (tf - t0))
 
         # Compute f(xselected)
         if len(xselected) > 0:
@@ -321,9 +339,8 @@ def shebo(
         else:
             ySelected = np.empty((0,))
             out.nit = out.nit + 1
-            print(
-                "Acquisition function has failed to find a new sample! "
-                "Consider modifying it."
+            logger.warning(
+                "Acquisition function failed to find a new sample; consider modifying it."
             )
             break
 
@@ -339,8 +356,7 @@ def shebo(
 
         # If the new point was better than current best, run NOMAD
         if new_best_point_found:
-            if disp:
-                print("New best point found, running NOMAD...")
+            logger.info("New best point found, running NOMAD...")
 
             nomadFunction.reset()
 
@@ -367,10 +383,10 @@ def shebo(
             nomadSample = np.array(nomadFunction.get_x_history())
             nomadFSample = np.array(nomadFunction.get_f_history())
 
-            if disp:
-                print(
-                    f"NOMAD optimization completed. NOMAD used {len(nomadSample)} evaluations."
-                )
+            logger.info(
+                "NOMAD optimization completed. NOMAD used %d evaluations.",
+                len(nomadSample),
+            )
 
             # Filter out points that are too close to existing samples
             idxes = FarEnoughSampleFilter(
@@ -405,7 +421,6 @@ def shebo(
                 xselected[feasible_idx], ySelected[feasible_idx]
             )
         tf = time.time()
-        if disp:
-            print("Time to update surrogate model: %f s" % (tf - t0))
+        logger.info("Time to update surrogate model: %f s", (tf - t0))
 
     return out

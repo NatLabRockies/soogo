@@ -48,7 +48,8 @@ def dycors(
     bounds = args[1] if len(args) > 1 else kwargs["bounds"]
 
     dim = len(bounds)  # Dimension of the problem
-    assert dim > 0
+    if dim <= 0:
+        raise ValueError("bounds must define at least one dimension")
 
     # Initialize acquisition function
     if acquisitionFunc is None:

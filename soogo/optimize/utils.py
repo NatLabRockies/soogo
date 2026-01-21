@@ -34,11 +34,13 @@ def evaluate_and_log_point(
     :param x: 2D array of points to evaluate.
     :param out: The output object to log the results.
 
-    :return: The function value(s) or NaN.
+    :return: The function value(s) or NaN(s) in case of an exception.
     """
-    assert out.sample is not None and out.fsample is not None, (
-        "Output object not initialized."
-    )
+    if out.sample is None or out.fsample is None:
+        raise RuntimeError(
+            "evaluate_and_log_point requires initialized sample and fsample;"
+            " call out.init() first"
+        )
 
     # Evaluate function
     n = len(x)

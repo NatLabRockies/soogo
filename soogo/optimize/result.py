@@ -99,7 +99,8 @@ class OptimizeResult:
             `scipy.stats.qmc.QMCEngine`.
         """
         dim = len(bounds)  # Dimension of the problem
-        assert dim > 0
+        if dim <= 0:
+            raise ValueError("bounds must define at least one dimension")
 
         # Initialize sample array in this object
         self.sample = np.empty((maxeval, dim))
@@ -115,7 +116,12 @@ class OptimizeResult:
                 raise RuntimeError("Cannot create valid initial design")
 
             # Compute f(sample)
-            fsample = np.array(fun(sample))
+            try:
+                fsample = np.asarray(fun(sample))
+            except Exception as e:
+                raise RuntimeError(
+                    "Error when evaluating initial design: %s." % str(e)
+                ) from e
 
             # Initialize nfev, sample, nobj and fsample
             self.nfev = len(sample)
@@ -142,9 +148,14 @@ class OptimizeResult:
 
         :param surrogateModel: Surrogate model.
         """
-        # Initialize self.x and self.fx
-        assert self.sample is not None
-        assert self.fsample is not None
+        if self.sample is None or self.fsample is None:
+            raise RuntimeError(
+                "init_best_values requires initialized sample and fsample; call init() first"
+            )
+        if self.sample.size == 0 or self.fsample.size == 0:
+            raise RuntimeError(
+                "init_best_values requires non-empty sample and fsample; call init() first"
+            )
         m = self.nfev
 
         if surrogateModel is not None and surrogateModel.ntrain > 0:

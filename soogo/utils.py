@@ -17,6 +17,8 @@
 
 __authors__ = ["Weslley S. Pereira"]
 
+import warnings
+
 
 def find_pareto_front(fx, iStart: int = 0) -> list:
     """Find the Pareto front given a set of points in the target space.
@@ -60,3 +62,17 @@ def gp_expected_improvement(delta, sigma):
     from scipy.stats import norm
 
     return delta * norm.cdf(delta / sigma) + sigma * norm.pdf(delta / sigma)
+
+
+def report_unused_kwargs(func_name, kwargs) -> None:
+    """Report any unused keyword arguments passed to the acquisition
+    function.
+
+    :param kwargs: Dictionary of keyword arguments.
+    """
+    if len(kwargs) > 0:
+        warnings.warn(
+            f"The function '{func_name}' received unused keyword arguments: "
+            f"{', '.join(list(kwargs.keys()))}.",
+            UserWarning,
+        )

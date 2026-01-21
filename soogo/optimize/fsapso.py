@@ -16,6 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from typing import Callable, Optional
+import logging
+import warnings
 
 import numpy as np
 from pymoo.algorithms.soo.nonconvex.pso import PSO
@@ -33,6 +35,8 @@ from ..model import RbfModel, Surrogate, MedianLpfFilter
 from .utils import OptimizeResult, evaluate_and_log_point, uncertainty_score
 from ..integrations.pymoo import PymooProblem
 from ..sampling import SpaceFillingSampler
+
+logger = logging.getLogger(__name__)
 
 
 def fsapso(
@@ -62,8 +66,8 @@ def fsapso(
     :param callback: If provided, the callback function will be called after
         each iteration with the current optimization result. The default is
         None.
-    :param disp: If True, print information about the optimization process.
-        The default is False.
+    :param disp: Deprecated and ignored. Configure logging via standard
+        Python logging levels instead of using this flag.
     :param seed: Seed or random number generator.
 
     :return: The optimization result.
@@ -76,8 +80,15 @@ def fsapso(
         computationally expensive problems. Applied Soft Computing, 92,
         106303. https://doi.org/10.1016/j.asoc.2020.106303
     """
+    if disp:
+        warnings.warn(
+            "'disp' is deprecated and ignored; use logging levels instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     dim = len(bounds)  # Dimension of the problem
-    assert dim > 0
+    if dim <= 0:
+        raise ValueError("bounds must define at least one dimension")
 
     # FAPSO parameters
     vMax = 0.1 * np.array([b[1] - b[0] for b in bounds])  # max velocity
@@ -114,7 +125,9 @@ def fsapso(
     out = OptimizeResult()
     out.init(fun, bounds, 1, maxeval, surrogateModel, seed=seed)
     out.init_best_values(surrogateModel)
-    assert isinstance(out.x, np.ndarray)
+    assert isinstance(out.x, np.ndarray), "Expected np.ndarray, got %s" % type(
+        out.fx
+    )
 
     # Select initial swarm
     _x = np.vstack((surrogateModel.X, out.sample[0 : out.nfev]))
@@ -124,15 +137,15 @@ def fsapso(
         bestIndices = np.argsort(_fx)[:nSwarm]
         swarmInitX = _x[bestIndices]
 
-        if disp:
-            print(f"Selected {nSwarm} best training points for initial swarm")
+        logger.info(
+            "Selected %d best training points for initial swarm", nSwarm
+        )
 
     else:
         # If not enough training data, use random sampling
-        if disp:
-            print(
-                "Not enough training data for initial swarm. Using random sampling to increase population."
-            )
+        logger.info(
+            "Not enough training data for initial swarm. Using random sampling to increase population."
+        )
 
         swarmInitX = SpaceFillingSampler(
             seed=rng.integers(np.iinfo(np.int32).max).item()
@@ -172,17 +185,15 @@ def fsapso(
     # Set initial swarm population
     pso.pop = initialPop
 
-    if disp:
-        print("Starting main FSAPSO loop...")
+    logger.info("Starting main FSAPSO loop...")
 
     # Main FSAPSO loop
     xselected = np.array(out.sample[0 : out.nfev, :], copy=True)
     ySelected = np.array(out.fsample[0 : out.nfev], copy=True)
     while out.nfev < maxeval:  # and pso.has_next():
-        if disp:
-            print("Iteration: %d" % out.nit)
-            print("fEvals: %d" % out.nfev)
-            print("Best value: %f" % out.fx)
+        logger.info("Iteration: %d", out.nit)
+        logger.info("fEvals: %d", out.nfev)
+        logger.info("Best value: %f", out.fx)
 
         # Reset improvement flag
         improvedThisIter = False

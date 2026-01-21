@@ -18,7 +18,7 @@
 __authors__ = ["Weslley S. Pereira"]
 
 import numpy as np
-from scipy.spatial.distance import cdist
+from typing import Optional
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.core.mixed import MixedVariableGA, MixedVariableMating
@@ -28,6 +28,7 @@ from pymoo.optimize import minimize as pymoo_minimize
 from .base import Acquisition
 from ..model import Surrogate
 from ..integrations.pymoo import PymooProblem, ListDuplicateElimination
+from .utils import FarEnoughSampleFilter
 
 
 class MinimizeMOSurrogate(Acquisition):
@@ -67,6 +68,7 @@ class MinimizeMOSurrogate(Acquisition):
         surrogateModel: Surrogate,
         bounds,
         n: int = 1,
+        exclusion_set: Optional[np.ndarray] = None,
         **kwargs,
     ) -> np.ndarray:
         """Acquire k points, where k <= n.
@@ -74,14 +76,15 @@ class MinimizeMOSurrogate(Acquisition):
         :param surrogateModel: Multi-target surrogate model.
         :param sequence bounds: List with the limits [x_min,x_max] of each
             direction x in the space.
-        :param n: Maximum number of points to be acquired. If n is zero, use all
-            points in the Pareto front.
+        :param n: Maximum number of points to be acquired.
+        :param exclusion_set: Known points, if any, in addition to the ones
+            used to train the surrogate.
         :return: k-by-dim matrix with the selected points.
         """
         dim = len(bounds)
 
         # Report unused kwargs
-        super().report_unused_kwargs(kwargs)
+        super().report_unused_optimize_kwargs(kwargs)
 
         iindex = surrogateModel.iindex
         optimizer = self.optimizer if len(iindex) == 0 else self.mi_optimizer
@@ -107,9 +110,16 @@ class MinimizeMOSurrogate(Acquisition):
             # Create tolerance based on smallest variable length
             atol = self.tol(bounds)
 
-            # Discard points that are too close to previously sampled points.
-            distNeighbor = cdist(bestCandidates, surrogateModel.X).min(axis=1)
-            bestCandidates = bestCandidates[distNeighbor >= atol, :]
+            # Discard points that are too close to previously sampled points and
+            # to each other.
+            exclusion_set = (
+                np.vstack((exclusion_set, surrogateModel.X))
+                if exclusion_set is not None
+                else surrogateModel.X
+            )
+            bestCandidates = FarEnoughSampleFilter(exclusion_set, atol)(
+                bestCandidates
+            )
 
             # Return if no point was left
             nMax = len(bestCandidates)
@@ -117,25 +127,8 @@ class MinimizeMOSurrogate(Acquisition):
                 return np.empty((0, dim))
 
             # Randomly select points in the Pareto front
-            idxs = (
-                np.random.choice(nMax, size=min(n, nMax))
-                if n > 0
-                else np.arange(nMax)
-            )
+            idxs = self.rng.choice(nMax, size=min(n, nMax))
             bestCandidates = bestCandidates[idxs]
-
-            # Discard points that are too close to eachother
-            selectedIdx = [0]
-            for i in range(1, len(bestCandidates)):
-                if (
-                    cdist(
-                        bestCandidates[i].reshape(1, -1),
-                        bestCandidates[selectedIdx],
-                    ).min()
-                    >= atol
-                ):
-                    selectedIdx.append(i)
-            bestCandidates = bestCandidates[selectedIdx]
 
             return bestCandidates
         else:

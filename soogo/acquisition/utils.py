@@ -18,11 +18,15 @@
 
 __authors__ = ["Weslley S. Pereira", "Byron Selvage"]
 
+import logging
+
 import numpy as np
 from scipy.spatial.distance import cdist
 from scipy.spatial import KDTree
 import networkx as nx
 from networkx.algorithms.approximation import maximum_independent_set
+
+logger = logging.getLogger(__name__)
 
 
 def weighted_score(
@@ -118,8 +122,8 @@ def argmin_weighted_score(
     # Return index with the best (smallest) score
     iBest = np.argmin(score)
     if score[iBest] == np.inf:
-        print(
-            "Warning: all candidates are too close to already evaluated points. Choose a better tolerance."
+        logger.warning(
+            "All candidates are too close to evaluated points; choose a better tolerance."
         )
         return -1
 

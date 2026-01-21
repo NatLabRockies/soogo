@@ -114,20 +114,29 @@ class GaussianProcess(Surrogate):
             return_std=return_std,
             return_cov=return_cov,
         )
-        assert i < self.ntarget
+
         if i == -1 or self.ntarget == 1:
             return res
         else:
-            assert i >= 0
+            if i >= self.ntarget or i < 0:
+                raise IndexError(
+                    "Target index i={} is out of bounds for ntarget={}".format(
+                        i, self.ntarget
+                    )
+                )
             if return_std or return_cov:
                 if return_std:
                     if return_cov:
+                        assert len(res) == 3, "Expected 3 return values"
                         return res[0][:, i], res[1][:, i], res[2][:, :, i]
                     else:
                         return res[0][:, i], res[1][:, i]
                 else:
                     return res[0][:, i], res[1][:, :, i]
             else:
+                assert isinstance(res, np.ndarray), (
+                    "Expected ndarray return value"
+                )
                 return res[:, i]
 
     @property
@@ -155,15 +164,8 @@ class GaussianProcess(Surrogate):
         """Return the minimum design space size for a given space dimension."""
         return 1 if dim > 0 else 0
 
-    def check_initial_design(self, sample: np.ndarray) -> bool:
-        """Check if the sample is able to generate a valid surrogate.
-
-        :param sample: m-by-d matrix with m training points in a d-dimensional
-            space.
-        """
-        if sample.ndim != 2 or len(sample) < 1:
-            return False
-        return True
+    def check_initial_design(self, _sample: np.ndarray) -> int:
+        return 0
 
     def update(self, Xnew, ynew) -> None:
         """Updates the model with new pairs of data (x,y).

@@ -57,7 +57,7 @@ class MaximizeDistance(Acquisition):
         self,
         surrogateModel: Surrogate,
         bounds,
-        points: Optional[np.ndarray] = None,
+        exclusion_set: Optional[np.ndarray] = None,
         **kwargs,
     ) -> np.ndarray:
         """
@@ -68,22 +68,22 @@ class MaximizeDistance(Acquisition):
         :param sequence bounds: List with the limits [x_min,x_max] of each
             direction x in the space.
         :param n: Number of points to be acquired.
-        :param points: Points to consider for distance maximization. If None,
-            use all previously sampled points in the surrogate model.
+        :param exclusion_set: Known points, if any, in addition to the ones
+            used to train the surrogate.
         :return: Array of acquired points that maximize minimum distance.
         """
         iindex = surrogateModel.iindex
         optimizer = self.optimizer if len(iindex) == 0 else self.mi_optimizer
 
         # Report unused kwargs
-        super().report_unused_kwargs(kwargs)
+        super().report_unused_optimize_kwargs(kwargs)
 
-        if points is None:
-            currentPoints = surrogateModel.X.copy()
-        else:
-            currentPoints = points.copy()
-
-        filter = FarEnoughSampleFilter(currentPoints, self.tol(bounds))
+        exclusion_set = (
+            np.vstack((exclusion_set, surrogateModel.X))
+            if exclusion_set is not None
+            else surrogateModel.X
+        )
+        filter = FarEnoughSampleFilter(exclusion_set, self.tol(bounds))
 
         problem = PymooProblem(
             lambda x: -filter.tree.query(x)[0],

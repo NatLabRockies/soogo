@@ -283,7 +283,7 @@ class TestOptimizeResultEdgeCases:
         Y_train = np.empty((0,))
         model = MockSurrogateModel(X_train, Y_train)
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             result.init(
                 fun, bounds, mineval=10, maxeval=maxeval, surrogateModel=model
             )
@@ -296,7 +296,7 @@ class TestOptimizeResultEdgeCases:
         result.nfev = 0
         result.nobj = 1
 
-        with pytest.raises((AttributeError, AssertionError)):
+        with pytest.raises(RuntimeError):
             result.init_best_values()
 
     def test_result_dataclass_fields(self):

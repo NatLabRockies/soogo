@@ -23,6 +23,7 @@ from scipy.spatial import KDTree
 from scipy.spatial.distance import cdist
 from scipy.special import gamma
 from scipy.optimize import minimize
+from typing import Optional
 
 from .base import Acquisition
 from ..model import Surrogate
@@ -108,6 +109,7 @@ class MinimizeSurrogate(Acquisition):
         surrogateModel: Surrogate,
         bounds,
         n: int = 1,
+        exclusion_set: Optional[np.ndarray] = None,
         **kwargs,
     ) -> np.ndarray:
         """Acquire n points based on MISO-MS from Müller (2016).
@@ -119,13 +121,15 @@ class MinimizeSurrogate(Acquisition):
         :param sequence bounds: List with the limits [x_min,x_max] of each
             direction x in the space.
         :param n: Max number of points to be acquired.
+        :param exclusion_set: Known points, if any, in addition to the ones
+            used to train the surrogate.
         :return: n-by-dim matrix with the selected points.
         """
         dim = len(bounds)
         volumeBounds = np.prod([b[1] - b[0] for b in bounds])
 
         # Report unused kwargs
-        super().report_unused_kwargs(kwargs)
+        super().report_unused_optimize_kwargs(kwargs)
 
         # Get index and bounds of the continuous variables
         cindex = [i for i in range(dim) if i not in surrogateModel.iindex]
@@ -152,6 +156,11 @@ class MinimizeSurrogate(Acquisition):
         selected = np.empty((n, dim))
 
         # Create a KDTree with the training data points
+        exclusion_set = (
+            np.vstack((exclusion_set, surrogateModel.X))
+            if exclusion_set is not None
+            else surrogateModel.X
+        )
         filter = FarEnoughSampleFilter(surrogateModel.X, self.tol(bounds))
 
         iter = 0

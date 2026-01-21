@@ -19,9 +19,10 @@ __authors__ = ["Weslley S. Pereira"]
 
 import numpy as np
 from scipy.spatial.distance import cdist
+from typing import Optional
 
 from .base import Acquisition
-from .utils import select_weighted_candidates
+from .utils import select_weighted_candidates, FarEnoughSampleFilter
 from ..model import Surrogate
 from ..sampling import random_sample
 
@@ -88,38 +89,33 @@ class WeightedAcquisition(Acquisition):
         else:
             self.weightpattern = [weightpattern]
 
-    def optimize(
+    def choose_candidates(
         self,
         surrogateModel: Surrogate,
         bounds,
+        x: np.ndarray,
         n: int = 1,
-        *,
-        constr_fun=None,
-        **kwargs,
+        constr=None,
+        exclusion_set: Optional[np.ndarray] = None,
     ) -> np.ndarray:
-        """Generate a number of candidates using the :attr:`sampler`. Then,
-        select up to n points that maximize the score.
+        """Select up to n candidates from x by minimizing the weighted score.
 
         :param surrogateModel: Surrogate model.
         :param sequence bounds: List with the limits [x_min,x_max] of each
             direction x in the space.
-        :param n: Number of points requested.
-        :param constr_fun: Optional constraint function. Must return a vector
+        :param x: Candidate points to choose from.
+        :param n: Number of points to be acquired.
+        :param constr: Optional constraint function. Must return a vector
             (or 2D array) with non-positive values for feasible candidates.
+        :param exclusion_set: Known points, if any, in addition to the ones
+            used to train the surrogate.
         :return: m-by-dim matrix with the selected points, where m <= n.
         """
         dim = len(bounds)  # Dimension of the problem
-        iindex = surrogateModel.iindex
 
-        # Report unused kwargs
-        super().report_unused_kwargs(kwargs)
-
-        # Generate the complete pool of candidates
-        x = random_sample(self.pool_size, bounds, iindex, self.rng)
-
-        if constr_fun is not None:
+        if constr is not None:
             # Filter out candidates that do not satisfy the constraints
-            constr_values = constr_fun(x)
+            constr_values = constr(x)
             if constr_values.ndim == 1:
                 feasible_idx = constr_values <= 0
             else:
@@ -132,13 +128,9 @@ class WeightedAcquisition(Acquisition):
         fx = surrogateModel(x)
 
         # Select best candidates
+        atol = self.tol(bounds)
         xselected, _ = select_weighted_candidates(
-            x,
-            cdist(x, surrogateModel.X),
-            fx,
-            n,
-            self.tol(bounds),
-            self.weightpattern,
+            x, cdist(x, surrogateModel.X), fx, n, atol, self.weightpattern
         )
         n = xselected.shape[0]
 
@@ -148,4 +140,39 @@ class WeightedAcquisition(Acquisition):
             + self.weightpattern[: n % len(self.weightpattern)]
         )
 
-        return xselected
+        if exclusion_set is None:
+            return xselected
+        else:
+            return FarEnoughSampleFilter(exclusion_set, atol)(xselected)
+
+    def optimize(
+        self,
+        surrogateModel: Surrogate,
+        bounds,
+        n: int = 1,
+        constr=None,
+        exclusion_set: Optional[np.ndarray] = None,
+        **kwargs,
+    ) -> np.ndarray:
+        """Generate a number of candidates using the :attr:`sampler`. Then,
+        select up to n points that maximize the score.
+
+        :param surrogateModel: Surrogate model.
+        :param sequence bounds: List with the limits [x_min,x_max] of each
+            direction x in the space.
+        :param n: Number of points requested.
+        :param constr: Optional constraint function. Must return a vector
+            (or 2D array) with non-positive values for feasible candidates.
+        :return: m-by-dim matrix with the selected points, where m <= n.
+        """
+        # Report unused kwargs
+        super().report_unused_optimize_kwargs(kwargs)
+
+        # Generate the complete pool of candidates
+        x = random_sample(
+            self.pool_size, bounds, surrogateModel.iindex, self.rng
+        )
+
+        return self.choose_candidates(
+            surrogateModel, bounds, x, n, constr, exclusion_set
+        )
