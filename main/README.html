@@ -52,6 +52,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#logging-and-output">Logging and Output</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#testing">Testing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#contributing">Contributing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#license">License</a></li>
@@ -203,6 +204,29 @@
 <section id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this heading"></a></h2>
 <p>This project uses <a class="reference external" href="https://www.sphinx-doc.org/en/master/">Sphinx</a> to generate the documentation. The latest documentation is available at https://nrel.github.io/soogo. To generate the documentation locally, run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">html</span></code> in the <code class="docutils literal notranslate"><span class="pre">docs</span></code> directory. The homepage of the documentation will then be found at <code class="docutils literal notranslate"><span class="pre">docs/_build/html/index.html</span></code>.</p>
+</section>
+<section id="logging-and-output">
+<h2>Logging and Output<a class="headerlink" href="#logging-and-output" title="Permalink to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">disp</span></code> parameter on optimizers is deprecated and ignored. Use Python’s <code class="docutils literal notranslate"><span class="pre">logging</span></code> to control verbosity and progress output.</p>
+<p>Example setup:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="c1"># Show info-level messages from soogo</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+<span class="c1"># Enable debug for a specific optimizer module</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;soogo.optimize.surrogate_optimization&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+
+<span class="c1"># Or enable debug for all soogo modules</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;soogo&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Guidance:</p>
+<ul class="simple">
+<li><p>Module loggers follow Python paths (e.g., <code class="docutils literal notranslate"><span class="pre">soogo.optimize.gosac</span></code>, <code class="docutils literal notranslate"><span class="pre">soogo.optimize.fsapso</span></code>).</p></li>
+<li><p>Iteration progress and timings log at <code class="docutils literal notranslate"><span class="pre">INFO</span></code>; deeper diagnostics at <code class="docutils literal notranslate"><span class="pre">DEBUG</span></code>; non-fatal issues at <code class="docutils literal notranslate"><span class="pre">WARNING</span></code>.</p></li>
+<li><p>Passing <code class="docutils literal notranslate"><span class="pre">disp</span></code> will emit a deprecation warning and have no effect.</p></li>
+</ul>
 </section>
 <section id="testing">
 <h2>Testing<a class="headerlink" href="#testing" title="Permalink to this heading"></a></h2>

@@ -60,6 +60,14 @@
 <li class="toctree-l3"><a class="reference internal" href="#building-documentation">Building documentation</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#exceptions-assertions-logging-and-warnings">Exceptions, Assertions, Logging, and Warnings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#exceptions-for-user-facing-input-and-runtime-errors">Exceptions (for user-facing input and runtime errors)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#assertions-for-internal-invariants-only">Assertions (for internal invariants only)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#logging-replace-prints-control-verbosity-via-module-loggers">Logging (replace prints; control verbosity via module loggers)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#warnings-and-deprecations">Warnings and Deprecations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#testing-guidance">Testing guidance</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="api/soogo.html">API Documentation</a></li>
@@ -266,6 +274,65 @@ sphinx-build<span class="w"> </span>.<span class="w"> </span>_build/html
 </pre></div>
 </div>
 <p>The generated documentation will be in <code class="docutils literal notranslate"><span class="pre">docs/_build/html/</span></code>.</p>
+</section>
+</section>
+<section id="exceptions-assertions-logging-and-warnings">
+<h2>Exceptions, Assertions, Logging, and Warnings<a class="headerlink" href="#exceptions-assertions-logging-and-warnings" title="Permalink to this heading"></a></h2>
+<p>We follow a clear policy to ensure user-facing errors are explicit and internal invariants remain safe, while output is controlled via Python’s logging.</p>
+<section id="exceptions-for-user-facing-input-and-runtime-errors">
+<h3>Exceptions (for user-facing input and runtime errors)<a class="headerlink" href="#exceptions-for-user-facing-input-and-runtime-errors" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>ValueError</strong>: Invalid values or configurations passed by the user (e.g., empty bounds, negative iteration counts, mismatched dimensions).</p></li>
+<li><p><strong>TypeError</strong>: Wrong types from user inputs (e.g., <code class="docutils literal notranslate"><span class="pre">bounds</span></code> not sequence-like, <code class="docutils literal notranslate"><span class="pre">fun</span></code> not callable).</p></li>
+<li><p><strong>RuntimeError</strong>: Invalid runtime state or sequencing (e.g., calling methods before required initialization, missing samples when computing best values).</p></li>
+<li><p>Do not raise <strong>AssertionError</strong> for user errors. Reserve assertions for internal invariants (see next section).</p></li>
+<li><p>Raise as early as possible at input validation boundaries. Include concise, actionable messages.</p></li>
+</ul>
+</section>
+<section id="assertions-for-internal-invariants-only">
+<h3>Assertions (for internal invariants only)<a class="headerlink" href="#assertions-for-internal-invariants-only" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">assert</span></code> to guard invariants that should never fail if code is correct (e.g., <code class="docutils literal notranslate"><span class="pre">out.x</span></code> and <code class="docutils literal notranslate"><span class="pre">out.fx</span></code> types post-initialization, shape invariants after internal transformations).</p></li>
+<li><p>Assertions may remain in performance-critical paths. They are not a substitute for validating user inputs.</p></li>
+<li><p>Do not rely on assertions to handle recoverable user errors.</p></li>
+</ul>
+</section>
+<section id="logging-replace-prints-control-verbosity-via-module-loggers">
+<h3>Logging (replace prints; control verbosity via module loggers)<a class="headerlink" href="#logging-replace-prints-control-verbosity-via-module-loggers" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p>Never use <code class="docutils literal notranslate"><span class="pre">print</span></code> for operational output. Use Python’s <code class="docutils literal notranslate"><span class="pre">logging</span></code>.</p></li>
+<li><p>Use module-level loggers under the <code class="docutils literal notranslate"><span class="pre">soogo.*</span></code> namespace, e.g., <code class="docutils literal notranslate"><span class="pre">soogo.optimize.fsapso</span></code>, <code class="docutils literal notranslate"><span class="pre">soogo.optimize.gosac</span></code>, <code class="docutils literal notranslate"><span class="pre">soogo.optimize.surrogate_optimization</span></code>.</p></li>
+<li><p><strong>INFO</strong>: Iteration progress, timings, key milestones.</p></li>
+<li><p><strong>DEBUG</strong>: Detailed diagnostics (candidate counts, seeds, internal decisions).</p></li>
+<li><p><strong>WARNING</strong>: Non-fatal issues (fallbacks, soft constraint violations, deprecations).</p></li>
+<li><p><strong>ERROR</strong>: Fatal errors prior to raising exceptions when appropriate.</p></li>
+<li><p>Do not enable verbose logging globally by default. Respect user configuration.</p></li>
+</ul>
+<p>Example configuration users can apply:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;soogo.optimize.surrogate_optimization&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+<span class="c1"># Or enable debug for all soogo modules</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;soogo&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="warnings-and-deprecations">
+<h3>Warnings and Deprecations<a class="headerlink" href="#warnings-and-deprecations" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">warnings.warn(message,</span> <span class="pre">DeprecationWarning)</span></code> for deprecations. Include migration guidance.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">disp</span></code> parameter on optimizers is deprecated and ignored. Emit a deprecation warning if provided, and route all output through logging.</p></li>
+<li><p>Avoid noisy warnings; prefer targeted conditions that benefit users.</p></li>
+</ul>
+</section>
+<section id="testing-guidance">
+<h3>Testing guidance<a class="headerlink" href="#testing-guidance" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p>Update tests to expect <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>/<code class="docutils literal notranslate"><span class="pre">TypeError</span></code>/<code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code> instead of <code class="docutils literal notranslate"><span class="pre">AssertionError</span></code> for user-facing errors.</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">caplog</span></code> (pytest) to validate logging for critical paths when necessary; keep assertions focused and stable.</p></li>
+<li><p>Do not assert on exact wording of log messages unless essential; prefer level and presence checks.</p></li>
+</ul>
 </section>
 </section>
 </section>

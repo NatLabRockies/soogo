@@ -81,6 +81,31 @@ This project is configured to use the package manager [pdm](https://pdm-project.
 
 This project uses [Sphinx](https://www.sphinx-doc.org/en/master/) to generate the documentation. The latest documentation is available at https://nrel.github.io/soogo. To generate the documentation locally, run `make html` in the `docs` directory. The homepage of the documentation will then be found at `docs/_build/html/index.html`.
 
+## Logging and Output
+
+The `disp` parameter on optimizers is deprecated and ignored. Use Python's `logging` to control verbosity and progress output.
+
+Example setup:
+
+```python
+import logging
+
+# Show info-level messages from soogo
+logging.basicConfig(level=logging.INFO)
+
+# Enable debug for a specific optimizer module
+logging.getLogger("soogo.optimize.surrogate_optimization").setLevel(logging.DEBUG)
+
+# Or enable debug for all soogo modules
+logging.getLogger("soogo").setLevel(logging.DEBUG)
+```
+
+Guidance:
+
+- Module loggers follow Python paths (e.g., `soogo.optimize.gosac`, `soogo.optimize.fsapso`).
+- Iteration progress and timings log at `INFO`; deeper diagnostics at `DEBUG`; non-fatal issues at `WARNING`.
+- Passing `disp` will emit a deprecation warning and have no effect.
+
 ## Testing
 
 This project uses [pytest](https://docs.pytest.org/en/stable/) to run the tests. To run the tests, run `pytest` at the root of this repository. Run `pytest --help` to see the available options.

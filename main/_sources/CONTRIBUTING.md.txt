@@ -182,3 +182,54 @@ sphinx-build . _build/html
 ```
 
 The generated documentation will be in `docs/_build/html/`.
+
+## Exceptions, Assertions, Logging, and Warnings
+
+We follow a clear policy to ensure user-facing errors are explicit and internal invariants remain safe, while output is controlled via Python's logging.
+
+### Exceptions (for user-facing input and runtime errors)
+
+- **ValueError**: Invalid values or configurations passed by the user (e.g., empty bounds, negative iteration counts, mismatched dimensions).
+- **TypeError**: Wrong types from user inputs (e.g., `bounds` not sequence-like, `fun` not callable).
+- **RuntimeError**: Invalid runtime state or sequencing (e.g., calling methods before required initialization, missing samples when computing best values).
+- Do not raise **AssertionError** for user errors. Reserve assertions for internal invariants (see next section).
+- Raise as early as possible at input validation boundaries. Include concise, actionable messages.
+
+### Assertions (for internal invariants only)
+
+- Use `assert` to guard invariants that should never fail if code is correct (e.g., `out.x` and `out.fx` types post-initialization, shape invariants after internal transformations).
+- Assertions may remain in performance-critical paths. They are not a substitute for validating user inputs.
+- Do not rely on assertions to handle recoverable user errors.
+
+### Logging (replace prints; control verbosity via module loggers)
+
+- Never use `print` for operational output. Use Python's `logging`.
+- Use module-level loggers under the `soogo.*` namespace, e.g., `soogo.optimize.fsapso`, `soogo.optimize.gosac`, `soogo.optimize.surrogate_optimization`.
+- **INFO**: Iteration progress, timings, key milestones.
+- **DEBUG**: Detailed diagnostics (candidate counts, seeds, internal decisions).
+- **WARNING**: Non-fatal issues (fallbacks, soft constraint violations, deprecations).
+- **ERROR**: Fatal errors prior to raising exceptions when appropriate.
+- Do not enable verbose logging globally by default. Respect user configuration.
+
+Example configuration users can apply:
+
+```python
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logging.getLogger("soogo.optimize.surrogate_optimization").setLevel(logging.DEBUG)
+# Or enable debug for all soogo modules
+logging.getLogger("soogo").setLevel(logging.DEBUG)
+```
+
+### Warnings and Deprecations
+
+- Use `warnings.warn(message, DeprecationWarning)` for deprecations. Include migration guidance.
+- The `disp` parameter on optimizers is deprecated and ignored. Emit a deprecation warning if provided, and route all output through logging.
+- Avoid noisy warnings; prefer targeted conditions that benefit users.
+
+### Testing guidance
+
+- Update tests to expect `ValueError`/`TypeError`/`RuntimeError` instead of `AssertionError` for user-facing errors.
+- Use `caplog` (pytest) to validate logging for critical paths when necessary; keep assertions focused and stable.
+- Do not assert on exact wording of log messages unless essential; prefer level and presence checks.

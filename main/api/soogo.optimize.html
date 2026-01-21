@@ -176,7 +176,8 @@ iteration.</p></li>
 <li><p><strong>useLocalSearch</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True, the algorithm will perform a continuous (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)
 local search when a significant improvement is not found in a sequence
 of (CP,TV,CP) steps.</p></li>
-<li><p><strong>disp</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True, print information about the optimization process. (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></li>
+<li><p><strong>disp</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Deprecated and ignored. Configure logging instead using (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)
+standard Python logging levels.</p></li>
 <li><p><strong>callback</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="#soogo.optimize.result.OptimizeResult" title="soogo.optimize.result.OptimizeResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">OptimizeResult</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]]) – If provided, the callback function will be called after (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)
 each iteration with the current optimization result.</p></li>
 <li><p><strong>seed</strong> – Seed or random number generator. (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)</p></li>
@@ -272,8 +273,8 @@ optimization.</p></li>
 <li><p><strong>callback</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="#soogo.optimize.result.OptimizeResult" title="soogo.optimize.result.OptimizeResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">OptimizeResult</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]]) – If provided, the callback function will be called after (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)
 each iteration with the current optimization result. The default is
 None.</p></li>
-<li><p><strong>disp</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True, print information about the optimization process. (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)
-The default is False.</p></li>
+<li><p><strong>disp</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Deprecated and ignored. Configure logging via standard (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)
+Python logging levels instead of using this flag.</p></li>
 <li><p><strong>seed</strong> – Seed or random number generator. (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)</p></li>
 </ul>
 </dd>
@@ -323,8 +324,8 @@ x in the search space.</p></li>
 <li><p><strong>surrogateModel</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="soogo.model.html#soogo.model.base.Surrogate" title="soogo.model.base.Surrogate"><code class="xref py py-class docutils literal notranslate"><span class="pre">Surrogate</span></code></a>]) – Surrogate model to be used for the (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)
 constraints. If None is provided, a <a class="reference internal" href="soogo.model.html#soogo.model.rbf.RbfModel" title="soogo.model.rbf.RbfModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RbfModel</span></code></a> model is
 used.</p></li>
-<li><p><strong>disp</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True, print information about the optimization (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)
-process. The default is False.</p></li>
+<li><p><strong>disp</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Deprecated and ignored. Configure logging instead using (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)
+standard Python logging levels.</p></li>
 <li><p><strong>callback</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="#soogo.optimize.result.OptimizeResult" title="soogo.optimize.result.OptimizeResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">OptimizeResult</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]]) – If provided, the callback function will be called (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)
 after each iteration with the current optimization result. The
 default is None.</p></li>
@@ -376,7 +377,8 @@ search space.</p></li>
 updated. If None is provided, <a class="reference internal" href="#soogo.optimize.surrogate_optimization.surrogate_optimization" title="soogo.optimize.surrogate_optimization.surrogate_optimization"><code class="xref py py-func docutils literal notranslate"><span class="pre">surrogate_optimization()</span></code></a> will
 choose a default model.</p></li>
 <li><p><strong>batchSize</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of new sample points to be generated per iteration. (default: <code class="docutils literal notranslate"><span class="pre">1</span></code>)</p></li>
-<li><p><strong>disp</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True, print information about the optimization process. (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></li>
+<li><p><strong>disp</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Deprecated and ignored. Configure logging instead using (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)
+standard Python logging levels.</p></li>
 <li><p><strong>callback</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="#soogo.optimize.result.OptimizeResult" title="soogo.optimize.result.OptimizeResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">OptimizeResult</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]]) – If provided, the callback function will be called after (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)
 each iteration with the current optimization result.</p></li>
 <li><p><strong>seed</strong> – Seed or random number generator. (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)</p></li>
@@ -530,10 +532,10 @@ loop. If <code class="docutils literal notranslate"><span class="pre">None</span
 Each call provides the surrogate objective model, bounds, and the
 requested number of points as positional arguments, and may pass
 keywords such as <code class="docutils literal notranslate"><span class="pre">points</span></code> (existing sample), <code class="docutils literal notranslate"><span class="pre">mu</span></code> (best point),
-<code class="docutils literal notranslate"><span class="pre">constr_fun</span></code> (feasibility function), and
+<code class="docutils literal notranslate"><span class="pre">constr</span></code> (feasibility function), and
 <code class="docutils literal notranslate"><span class="pre">perturbation_probability</span></code> (for DDS-like samplers).</p></li>
-<li><p><strong>disp</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True, print information about the optimization process. The (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)
-default is False.</p></li>
+<li><p><strong>disp</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Deprecated and ignored. Configure logging via standard Python (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)
+logging levels instead.</p></li>
 <li><p><strong>callback</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="#soogo.optimize.result.OptimizeResult" title="soogo.optimize.result.OptimizeResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">OptimizeResult</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]]) – If provided, the callback function will be called after (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)
 each iteration with the current optimization result. The default is
 None.</p></li>
@@ -584,8 +586,8 @@ step. Defaults to <a class="reference internal" href="soogo.acquisition.html#soo
 <li><p><strong>acquisitionFuncGlobal</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="soogo.acquisition.html#soogo.acquisition.weighted_acquisition.WeightedAcquisition" title="soogo.acquisition.weighted_acquisition.WeightedAcquisition"><code class="xref py py-class docutils literal notranslate"><span class="pre">WeightedAcquisition</span></code></a>]) – Acquisition used in the global exploration (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)
 step. Defaults to <a class="reference internal" href="soogo.acquisition.html#soogo.acquisition.weighted_acquisition.WeightedAcquisition" title="soogo.acquisition.weighted_acquisition.WeightedAcquisition"><code class="xref py py-class docutils literal notranslate"><span class="pre">WeightedAcquisition</span></code></a> with a space-filling
 sampler and weight pattern of <code class="docutils literal notranslate"><span class="pre">0.95</span></code>.</p></li>
-<li><p><strong>disp</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True, print information about the optimization (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)
-process. The default is False.</p></li>
+<li><p><strong>disp</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Deprecated and ignored. Configure logging via standard Python (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)
+logging levels instead.</p></li>
 <li><p><strong>callback</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="#soogo.optimize.result.OptimizeResult" title="soogo.optimize.result.OptimizeResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">OptimizeResult</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]]) – If provided, the callback function will be called (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)
 after each iteration with the current optimization result. The
 default is None.</p></li>
@@ -667,7 +669,8 @@ None.</p></li>
 <li><p><strong>performContinuousSearch</strong> – If True, the algorithm will perform a
 continuous search when a significant improvement is found by updating an
 integer variable.</p></li>
-<li><p><strong>disp</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True, print information about the optimization process. (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></li>
+<li><p><strong>disp</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Deprecated and ignored. Configure logging via standard Python (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)
+logging levels instead.</p></li>
 <li><p><strong>callback</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="#soogo.optimize.result.OptimizeResult" title="soogo.optimize.result.OptimizeResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">OptimizeResult</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]]) – If provided, the callback function will be called after (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)
 each iteration with the current optimization result.</p></li>
 <li><p><strong>seed</strong> – Seed or random number generator. (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)</p></li>
@@ -718,7 +721,7 @@ Optim Eng 17, 177–203 (2016). <a class="reference external" href="https://doi.
 <dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>The function value(s) or NaN.</p>
+<dd class="field-odd"><p>The function value(s) or NaN(s) in case of an exception.</p>
 </dd>
 </dl>
 </dd></dl>
