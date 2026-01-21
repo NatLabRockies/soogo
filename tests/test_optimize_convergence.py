@@ -133,9 +133,6 @@ def test_unconstrained_algorithms(
         run_vals = []
         soogo_objective = make_soogo_objective(prob_instance)
         for run in range(n_runs):
-            np.random.seed(
-                run + 42
-            )  # Still needed for some algorithms (e.g., FSAPSO)
             out = alg(
                 soogo_objective,
                 prob_instance.bounds(),

@@ -62,7 +62,6 @@ def run_optimizer(
     nRuns: int,
     *,
     bounds=None,
-    disp: bool = False,
 ) -> list[OptimizeResult]:
     """Runs the algorithm `algo` to find the minimum of the function `objf`.
 
@@ -79,8 +78,6 @@ def run_optimizer(
     :param nRuns: Number of times that optimization will be performed.
     :param bounds: Bounds for the optimization. Default: the bounds for the
         domain of `objf`.
-    :param disp: Whether or not to display information about the optimization
-        iterations.
     :return: List of results for each of the `nRuns` optimization runs.
     """
     bounds = objf.domain() if bounds is None else bounds
@@ -131,7 +128,6 @@ def run_optimizer(
                 maxeval=maxEval - 2 * (nArgs + 1),
                 surrogateModel=modelIter,
                 acquisitionFunc=acquisitionFuncIter,
-                disp=disp,
                 seed=1,  # Shouldn't be needed, but just in case
             )
         else:
@@ -140,7 +136,6 @@ def run_optimizer(
                 bounds=bounds,
                 maxeval=maxEval - 2 * (nArgs + 1),
                 surrogateModel=modelIter,
-                disp=disp,
                 seed=1,  # Shouldn't be needed, but just in case
             )
         optres.append(res)
@@ -219,6 +214,9 @@ maxEvals = {key: 100 * (len(f.domain()) + 1) for key, f in myFuncs.items()}
 # Program that runs the benchmark
 if __name__ == "__main__":
     import argparse
+    import logging
+
+    logging.basicConfig(level=logging.INFO)
 
     # Arguments for command line
     parser = argparse.ArgumentParser(
@@ -264,7 +262,6 @@ if __name__ == "__main__":
         algorithms[args.algorithm],
         args.ntrials,
         bounds=bounds,
-        disp=True,
     )
     tf = time.time()
 

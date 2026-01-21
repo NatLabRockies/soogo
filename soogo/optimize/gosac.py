@@ -22,13 +22,15 @@ from typing import Callable, Optional
 
 import numpy as np
 
+from pymoo.termination.default import DefaultMultiObjectiveTermination
+
 from ..acquisition import (
     GosacSample,
     MaximizeDistance,
     MinimizeMOSurrogate,
     MultipleAcquisition,
 )
-from ..model import RbfModel, Surrogate
+from ..model import RbfModel, Surrogate, LinearRadialBasisFunction
 from .utils import OptimizeResult
 
 logger = logging.getLogger(__name__)
@@ -95,7 +97,7 @@ def gosac(
     return_surrogate = True
     if surrogateModel is None:
         return_surrogate = False
-        surrogateModel = RbfModel()
+        surrogateModel = RbfModel(LinearRadialBasisFunction())
 
     # Initialize output
     out = OptimizeResult()
@@ -117,14 +119,29 @@ def gosac(
             (np.full((len(out.fsample), 1), np.nan), out.fsample)
         )
 
-    # Initialize best values
-    out.init_best_values()
-    assert isinstance(out.x, np.ndarray), "Expected np.ndarray, got %s" % type(
-        out.fx
-    )
-    assert isinstance(out.fx, np.ndarray), (
-        "Expected np.ndarray, got %s" % type(out.fx)
-    )
+    # Initialize best values if a feasible solution is found at the start
+    if out.nfev == 0:
+        feasible_idx = np.where(np.all(surrogateModel.X <= 0, axis=1))[0]
+        feasible_x = surrogateModel.X[feasible_idx]
+        if len(feasible_x) > 0:
+            feasible_fx = np.asarray(fun(feasible_x))
+            feasible_gx = surrogateModel.Y[feasible_idx]
+            best_feasible_idx = np.argmin(feasible_fx)
+            out.x = feasible_x[best_feasible_idx].copy()
+            out.fx = np.hstack(
+                (
+                    feasible_fx[best_feasible_idx],
+                    feasible_gx[best_feasible_idx],
+                )
+            )
+    else:
+        feasible_idx = np.where(np.all(out.fsample[:, 1:] <= 0, axis=1))[0]
+        if len(feasible_idx) > 0:
+            best_feasible_idx = feasible_idx[
+                np.argmin(out.fsample[feasible_idx, 0])
+            ]
+            out.x = out.sample[best_feasible_idx].copy()
+            out.fx = out.fsample[best_feasible_idx].copy()
 
     # Reserve space for the surrogate model to avoid repeated allocations
     gdim = out.fsample.shape[1] - 1
@@ -136,6 +153,12 @@ def gosac(
     rtol = 1e-3
     acquisition1 = MinimizeMOSurrogate(
         rtol=rtol, seed=rng.integers(np.iinfo(np.int32).max).item()
+    )
+    acquisition1.optimizer.termination = DefaultMultiObjectiveTermination(
+        n_max_gen=10
+    )
+    acquisition1.mi_optimizer.termination = DefaultMultiObjectiveTermination(
+        n_max_gen=10
     )
     acquisition2 = MultipleAcquisition(
         (
@@ -157,7 +180,7 @@ def gosac(
         ySelected = ySelected.flatten()
 
     # Phase 1: Find a feasible solution
-    while out.nfev < maxeval and out.x.size == 0:
+    while out.nfev < maxeval and out.x is None:
         logger.info("(Phase 1) Iteration: %d", out.nit)
         logger.info("fEvals: %d", out.nfev)
         logger.info(
@@ -166,8 +189,7 @@ def gosac(
 
         # Update surrogate models
         t0 = time.time()
-        if out.nfev > 0:
-            surrogateModel.update(xselected, ySelected)
+        surrogateModel.update(xselected, ySelected)
         tf = time.time()
         logger.info("Time to update surrogate model: %f s", (tf - t0))
 
@@ -214,7 +236,7 @@ def gosac(
             out.fx[1:] = ySelected
             out.fsample[out.nfev, 0] = fxSelected
         else:
-            out.fsample[out.nfev, 0] = np.inf
+            out.fsample[out.nfev, 0] = np.nan
 
         # Update sample and fsample in out
         out.sample[out.nfev, :] = xselected
@@ -228,15 +250,13 @@ def gosac(
         if callback is not None:
             callback(out)
 
-    if out.x.size == 0:
+    if out.x is None:
         # No feasible solution was found
-        out.sample.resize(out.nfev, dim)
-        out.fsample.resize(out.nfev, gdim)
+        assert out.nfev == maxeval
 
         # Update surrogate model if it lives outside the function scope
         t0 = time.time()
-        if out.nfev > 0:
-            surrogateModel.update(xselected, ySelected)
+        surrogateModel.update(xselected, ySelected)
         tf = time.time()
         logger.info("Time to update surrogate model: %f s", (tf - t0))
 
@@ -250,14 +270,13 @@ def gosac(
 
         # Update surrogate models
         t0 = time.time()
-        if out.nfev > 0:
-            surrogateModel.update(xselected, ySelected)
+        surrogateModel.update(xselected, ySelected)
         tf = time.time()
         logger.info("Time to update surrogate model: %f s", (tf - t0))
 
         # Solve cheap problem with multiple constraints
         t0 = time.time()
-        xselected = acquisition2.optimize(surrogateModel, bounds, n=1)
+        xselected = acquisition2.optimize(surrogateModel, bounds)
         tf = time.time()
         logger.info(
             "Solving the cheap problem with surrogate cons: %d points in %f s",
@@ -277,7 +296,7 @@ def gosac(
                 out.fx[1:] = ySelected
             out.fsample[out.nfev, 0] = fxSelected
         else:
-            out.fsample[out.nfev, 0] = np.inf
+            out.fsample[out.nfev, 0] = np.nan
 
         # Update sample and fsample in out
         out.sample[out.nfev, :] = xselected
@@ -294,8 +313,7 @@ def gosac(
     # Update surrogate model if it lives outside the function scope
     if return_surrogate:
         t0 = time.time()
-        if out.nfev > 0:
-            surrogateModel.update(xselected, ySelected)
+        surrogateModel.update(xselected, ySelected)
         tf = time.time()
         logger.info("Time to update surrogate model: %f s", (tf - t0))
 

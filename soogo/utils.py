@@ -17,7 +17,9 @@
 
 __authors__ = ["Weslley S. Pereira"]
 
-import warnings
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def find_pareto_front(fx, iStart: int = 0) -> list:
@@ -71,8 +73,7 @@ def report_unused_kwargs(func_name, kwargs) -> None:
     :param kwargs: Dictionary of keyword arguments.
     """
     if len(kwargs) > 0:
-        warnings.warn(
+        logger.debug(
             f"The function '{func_name}' received unused keyword arguments: "
-            f"{', '.join(list(kwargs.keys()))}.",
-            UserWarning,
+            f"{', '.join(list(kwargs.keys()))}."
         )

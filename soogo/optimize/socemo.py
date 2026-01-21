@@ -207,13 +207,9 @@ def socemo(
         # maximizes the minimum distance of sample points
         #
         t0 = time.time()
-        bestCandidates = step3acquisition.optimize(
-            surrogateModel, bounds, n=nMax
-        )
+        bestCandidates = step3acquisition.optimize(surrogateModel, bounds)
         if len(bestCandidates) == 0:
-            bestCandidates = maximizeDistance.optimize(
-                surrogateModel, bounds, n=1
-            )
+            bestCandidates = maximizeDistance.optimize(surrogateModel, bounds)
         xselected = np.concatenate((xselected, bestCandidates), axis=0)
         tf = time.time()
         logger.info(
@@ -227,7 +223,7 @@ def socemo(
         #
         t0 = time.time()
         bestCandidates = acquisitionFuncGlobal.optimize(
-            surrogateModel, bounds, 1
+            surrogateModel, bounds, n=1
         )
         xselected = np.concatenate((xselected, bestCandidates), axis=0)
         tf = time.time()

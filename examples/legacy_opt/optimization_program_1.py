@@ -131,7 +131,6 @@ def read_and_run(
                 surrogateModel=rbfModel,
                 acquisitionFunc=acquisitionFuncIter,
                 batchSize=batchSize,
-                disp=True,
             )
         elif (
             optim_func == soogo.surrogate_optimization
@@ -146,7 +145,6 @@ def read_and_run(
                 ),
                 maxeval=maxeval,
                 surrogateModel=rbfModel,
-                disp=True,
             )
         else:
             raise ValueError("Invalid optimization function.")
@@ -410,6 +408,7 @@ def main(config: int) -> list[OptimizeResult]:
 
 if __name__ == "__main__":
     import argparse
+    import logging
 
     parser = argparse.ArgumentParser(
         description="Run the optimization and plot the results."
@@ -421,6 +420,8 @@ if __name__ == "__main__":
         default=1,
     )
     args = parser.parse_args()
+
+    logging.basicConfig(level=logging.INFO)
 
     optres = main(args.config)
     Ntrials = len(optres)

@@ -109,7 +109,9 @@ def shebo(
     # Check that required PyNomad package is available
     if PyNomad is None:
         warnings.warn(
-            "PyNomad package is required but not installed. Install the PyNomad package and try again."
+            "PyNomad package is required but not installed. Install the PyNomad package and try again.",
+            ImportWarning,
+            stacklevel=2,
         )
         return OptimizeResult()
 
@@ -326,6 +328,7 @@ def shebo(
             n=1,
             exclusion_set=evalSurrogate.X[evalSurrogate.Y == 0],
             xbest=out.x,
+            ybest=out.fx,
             constr=lambda x: threshold - evalSurrogate(x),
         )
         if len(xselected) == 0:
