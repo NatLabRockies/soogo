@@ -23,7 +23,13 @@ from typing import Optional
 
 # Pymoo imports
 from pymoo.algorithms.soo.nonconvex.de import DE
+from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.core.mixed import MixedVariableGA, MixedVariableMating
+from pymoo.operators.survival.rank_and_crowding import RankAndCrowding
+from pymoo.termination.default import (
+    DefaultSingleObjectiveTermination,
+    DefaultMultiObjectiveTermination,
+)
 
 # Local imports
 from ..model import Surrogate
@@ -50,7 +56,13 @@ class Acquisition(ABC):
     :param mi_optimizer: Mixed-integer optimizer to be used for the acquisition
         function. Default is Genetic Algorithm (MixedVariableGA) from pymoo.
     :param rtol: Minimum distance between a candidate point and the
-        previously selected points relative to the domain size. Default is 1e-6.
+        previously selected points relative to the domain size.
+    :param termination: Termination condition for the acquisition function.
+        Default is None.
+    :param multi_objective: Whether the acquisition function is
+        multi-objective. Default is False.
+    :param n_max_evals_optimizer: Maximum number of function evaluations for
+        the optimizer. Default is 1000.
 
     .. attribute:: optimizer
 
@@ -67,28 +79,96 @@ class Acquisition(ABC):
         Minimum distance between a candidate point and the previously selected
         points.  This figures out as a constraint in the optimization problem
         solved in :meth:`optimize()`.
+
+    .. attribute:: termination
+
+        Termination condition for the acquisition function.
     """
+
+    #: Default relative tolerance for the acquisition function.
+    DEFAULT_RTOL = 1e-6
+
+    #: Default maximum number of function evaluations for the acquisition
+    DEFAULT_N_MAX_EVALS_OPTIMIZER = 1000
 
     def __init__(
         self,
         optimizer=None,
         mi_optimizer=None,
-        rtol: float = 1e-6,
+        rtol: float = DEFAULT_RTOL,
         termination: Optional[TerminationCondition] = None,
+        multi_objective: bool = False,
+        n_max_evals_optimizer: int = DEFAULT_N_MAX_EVALS_OPTIMIZER,
     ) -> None:
-        self.optimizer = DE() if optimizer is None else optimizer
+        self.rtol = rtol
+        self.termination = termination
+
+        self.optimizer = (
+            self.default_optimizer(
+                False, multi_objective, n_max_evals_optimizer
+            )
+            if optimizer is None
+            else optimizer
+        )
         self.mi_optimizer = (
-            MixedVariableGA(
-                eliminate_duplicates=ListDuplicateElimination(),
-                mating=MixedVariableMating(
-                    eliminate_duplicates=ListDuplicateElimination()
-                ),
+            self.default_optimizer(
+                True, multi_objective, n_max_evals_optimizer
             )
             if mi_optimizer is None
             else mi_optimizer
         )
-        self.rtol = rtol
-        self.termination = termination
+
+    def default_optimizer(
+        self,
+        mixed_integer: bool,
+        multi_objective: bool = False,
+        n_max_evals_optimizer: int = DEFAULT_N_MAX_EVALS_OPTIMIZER,
+    ):
+        """Get the default optimizer for the acquisition function.
+
+        :param mixed_integer: Whether the acquisition function is
+            mixed-integer.
+        :param multi_objective: Whether the acquisition function is
+            multi-objective.
+        :param n_max_evals_optimizer: Maximum number of function evaluations
+            for the optimizer.
+        :return: The default optimizer.
+        """
+        if not multi_objective:
+            if not mixed_integer:
+                return DE(
+                    termination=DefaultSingleObjectiveTermination(
+                        xtol=self.rtol, n_max_evals=n_max_evals_optimizer
+                    )
+                )
+            else:
+                return MixedVariableGA(
+                    eliminate_duplicates=ListDuplicateElimination(),
+                    mating=MixedVariableMating(
+                        eliminate_duplicates=ListDuplicateElimination()
+                    ),
+                    termination=DefaultSingleObjectiveTermination(
+                        xtol=self.rtol, n_max_evals=n_max_evals_optimizer
+                    ),
+                )
+        else:
+            if not mixed_integer:
+                return NSGA2(
+                    termination=DefaultMultiObjectiveTermination(
+                        xtol=self.rtol, n_max_evals=n_max_evals_optimizer
+                    )
+                )
+            else:
+                return MixedVariableGA(
+                    eliminate_duplicates=ListDuplicateElimination(),
+                    mating=MixedVariableMating(
+                        eliminate_duplicates=ListDuplicateElimination()
+                    ),
+                    survival=RankAndCrowding(),
+                    termination=DefaultMultiObjectiveTermination(
+                        xtol=self.rtol, n_max_evals=n_max_evals_optimizer
+                    ),
+                )
 
     @classmethod
     def report_unused_optimize_kwargs(cls, kwargs) -> None:

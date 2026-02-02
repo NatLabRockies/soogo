@@ -124,7 +124,6 @@ def cptv(
         acquisitionFunc = CoordinatePerturbation(
             pool_size=min(500 * dim, 5000),
             weightpattern=(0.3, 0.5, 0.8, 0.95),
-            rtol=1e-6,
             sigma=BoundedParameter(0.2, 0.2 * 0.5**6, 0.2),
             termination=RobustCondition(
                 UnsuccessfulImprovement(improvementTol), max(5, dim)

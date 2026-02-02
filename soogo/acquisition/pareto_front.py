@@ -20,19 +20,15 @@ __authors__ = ["Weslley S. Pereira"]
 
 import numpy as np
 from scipy.spatial import KDTree
-from scipy.optimize import differential_evolution
 from typing import Optional
 
-from pymoo.algorithms.moo.nsga2 import NSGA2
-from pymoo.core.mixed import MixedVariableGA, MixedVariableMating
-from pymoo.operators.survival.rank_and_crowding import RankAndCrowding
 from pymoo.core.initialization import Initialization
 from pymoo.optimize import minimize as pymoo_minimize
 from pymoo.core.population import Population
 
 from .base import Acquisition
 from ..model import LinearRadialBasisFunction, RbfModel, Surrogate
-from ..integrations.pymoo import PymooProblem, ListDuplicateElimination
+from ..integrations.pymoo import PymooProblem
 from ..utils import find_pareto_front
 from .utils import FarEnoughSampleFilter
 
@@ -68,6 +64,10 @@ class ParetoFront(Acquisition):
 
         Random number generator.
 
+    .. attribute:: so_optimizer
+
+        Single-objective optimizer to be used in step 1.
+
     References
     ----------
     .. [#] Juliane Mueller. SOCEMO: Surrogate Optimization of Computationally
@@ -80,19 +80,11 @@ class ParetoFront(Acquisition):
         self, optimizer=None, mi_optimizer=None, oldTV=(), seed=None, **kwargs
     ) -> None:
         self.oldTV = np.array(oldTV)
-
-        if optimizer is None:
-            optimizer = NSGA2()
-        if mi_optimizer is None:
-            mi_optimizer = MixedVariableGA(
-                eliminate_duplicates=ListDuplicateElimination(),
-                mating=MixedVariableMating(
-                    eliminate_duplicates=ListDuplicateElimination()
-                ),
-                survival=RankAndCrowding(),
-            )
-        super().__init__(optimizer, mi_optimizer, **kwargs)
+        super().__init__(
+            optimizer, mi_optimizer, multi_objective=True, **kwargs
+        )
         self.rng = np.random.default_rng(seed)
+        self.so_optimizer = self.default_optimizer(False)
 
     def pareto_front_target(self, paretoFront: np.ndarray) -> np.ndarray:
         """Find a target value that should fill a gap in the Pareto front.
@@ -141,15 +133,22 @@ class ParetoFront(Acquisition):
             return -tree.query(_tau)[0]
 
         # Minimize delta_f
-        res = differential_evolution(
+        problem = PymooProblem(
             delta_f,
             boundsPareto,
-            seed=self.rng.integers(np.iinfo(np.int32).max).item(),
         )
-        tauk = paretoModel(res.x)
-        tau = np.concatenate((res.x[0:k], tauk, res.x[k:]))
-
-        return tau
+        res = pymoo_minimize(
+            problem,
+            self.so_optimizer,
+            seed=self.rng.integers(np.iinfo(np.int32).max).item(),
+            verbose=False,
+        )
+        if res.X is not None:
+            tauk = paretoModel(res.X)
+            tau = np.concatenate((res.X[0:k], tauk, res.X[k:]))
+            return tau
+        else:
+            return np.array([])
 
     def optimize(
         self,
@@ -180,6 +179,12 @@ class ParetoFront(Acquisition):
         dim = len(bounds)
         objdim = surrogateModel.ntarget
 
+        if surrogateModel.ntarget < 2:
+            raise ValueError(
+                "The surrogate model must have at least two targets "
+                "to perform multi-objective optimization."
+            )
+
         # Report unused kwargs
         super().report_unused_optimize_kwargs(kwargs)
 
@@ -205,9 +210,11 @@ class ParetoFront(Acquisition):
         filter = FarEnoughSampleFilter(exclusion_set, self.tol(bounds))
 
         xselected = np.empty((0, dim))
-        for i in range(n):
+        for _ in range(n):
             # Find a target value tau in the Pareto front
             tau = self.pareto_front_target(np.asarray(ybest))
+            if len(tau) == 0:
+                break
             self.oldTV = np.concatenate(
                 (self.oldTV.reshape(-1, objdim), [tau]), axis=0
             )

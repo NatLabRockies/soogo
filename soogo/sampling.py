@@ -106,9 +106,12 @@ def random_sample(
         samples01 = rng.random(n)
     else:
         samples01 = rng.random((n, dim))
-    sample = l_bounds + samples01 * (u_bounds - l_bounds)
 
-    # Floor integer variables
+    # Check sample is in the unit hypercube
+    assert (samples01.max() <= 1.0) and (samples01.min() >= 0.0)
+
+    # Scale to bounds
+    sample = l_bounds + samples01 * (u_bounds - l_bounds)
     sample[:, list(iindex)] = np.floor(sample[:, list(iindex)])
 
     return sample

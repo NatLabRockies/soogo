@@ -19,13 +19,18 @@ __authors__ = ["Weslley S. Pereira"]
 
 
 import numpy as np
-from scipy.optimize import differential_evolution
 from scipy.linalg import cholesky, solve_triangular
 from typing import Optional
+import logging
+
+from pymoo.optimize import minimize as pymoo_minimize
 
 from .base import Acquisition
 from ..model import GaussianProcess
 from ..sampling import SpaceFillingSampler
+from ..integrations.pymoo import PymooProblem
+
+logger = logging.getLogger(__name__)
 
 
 class MaximizeEI(Acquisition):
@@ -121,33 +126,49 @@ class MaximizeEI(Acquisition):
                 "MaximizeEI acquisition only works for continuous problems."
             )
 
+        dim = len(bounds)
+
         # Report unused kwargs
         super().report_unused_optimize_kwargs(kwargs)
 
         if n == 0:
-            return np.empty((0, len(bounds)))
+            return np.empty((0, dim))
 
         xbest = None
         if ybest is None:
             # Compute an estimate for ybest using the surrogate.
-            res = differential_evolution(
-                lambda x: surrogateModel(np.asarray([x])),
-                bounds,
-                seed=self.rng,
+            problem = PymooProblem(surrogateModel, bounds)
+            res = pymoo_minimize(
+                problem,
+                self.optimizer,
+                seed=self.rng.integers(np.iinfo(np.int32).max).item(),
+                verbose=False,
             )
-            ybest = res.fun
-            if res.success:
-                xbest = res.x
+            if res.X is not None and res.F is not None:
+                xbest = res.X
+                ybest = res.F[0]
+            else:
+                logger.warning(
+                    "Surrogate model minimization failed; "
+                    "using best training point."
+                )
+                idx = surrogateModel.Y.argmin()
+                xbest = surrogateModel.X[idx]
+                ybest = surrogateModel.Y[idx]
 
         # Use the point that maximizes the EI
-        res = differential_evolution(
-            lambda x: -surrogateModel.expected_improvement(
-                np.asarray([x]), ybest
-            ),
+        problem = PymooProblem(
+            lambda x: -surrogateModel.expected_improvement(x, ybest),
             bounds,
-            seed=self.rng,
         )
-        xs = res.x if res.success else None
+        res = pymoo_minimize(
+            problem,
+            self.optimizer,
+            seed=self.rng.integers(np.iinfo(np.int32).max).item(),
+            verbose=False,
+        )
+        if res.X is not None:
+            xs = res.X
 
         # Returns xs if n == 1
         if res.success and n == 1:
@@ -171,7 +192,7 @@ class MaximizeEI(Acquisition):
                 self.pool_size, bounds, current_sample=exclusion_set
             )
             if pool_size > 0
-            else np.empty((0, len(bounds)))
+            else np.empty((0, dim))
         )
 
         if xs is not None:

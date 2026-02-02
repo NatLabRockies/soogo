@@ -22,7 +22,7 @@ from scipy.spatial.distance import cdist
 from typing import Optional
 
 from .base import Acquisition
-from .utils import select_weighted_candidates, FarEnoughSampleFilter
+from .utils import select_weighted_candidates
 from ..model import Surrogate
 from ..sampling import random_sample
 
@@ -127,10 +127,15 @@ class WeightedAcquisition(Acquisition):
         # Evaluate candidates
         fx = surrogateModel(x)
 
+        if exclusion_set is None:
+            exclusion_set = surrogateModel.X
+        else:
+            exclusion_set = np.vstack((surrogateModel.X, exclusion_set))
+
         # Select best candidates
         atol = self.tol(bounds)
         xselected, _ = select_weighted_candidates(
-            x, cdist(x, surrogateModel.X), fx, n, atol, self.weightpattern
+            x, cdist(x, exclusion_set), fx, n, atol, self.weightpattern
         )
         n = xselected.shape[0]
 
@@ -140,10 +145,7 @@ class WeightedAcquisition(Acquisition):
             + self.weightpattern[: n % len(self.weightpattern)]
         )
 
-        if exclusion_set is None:
-            return xselected
-        else:
-            return FarEnoughSampleFilter(exclusion_set, atol)(xselected)
+        return xselected
 
     def optimize(
         self,

@@ -129,8 +129,7 @@ def shebo(
 
     # Acquisition function to maximize distance
     maxDistAcq = MaximizeDistance(
-        seed=rng.integers(np.iinfo(np.int32).max).item(),
-        rtol=rtol,
+        seed=rng.integers(np.iinfo(np.int32).max).item(), rtol=rtol
     )
 
     # Initialize optional variables

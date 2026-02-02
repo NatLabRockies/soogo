@@ -101,6 +101,14 @@ class RbfModel(Surrogate):
 
         Filter to be used in the target (image) space.
 
+    .. attribute:: shift
+
+        Shift applied to the input data before fitting the model.
+
+    .. attribute:: scale
+
+        Scale applied to the input data before fitting the model.
+
     """
 
     def __init__(
@@ -454,9 +462,7 @@ class RbfModel(Surrogate):
                     assume_a="sym",
                 )
             except np.linalg.LinAlgError as e:
-                from numpy.linalg import cond
-
-                condA = cond(A)
+                condA = np.linalg.cond(A)
                 dist_X = cdist(self.X, self.X)
                 np.fill_diagonal(dist_X, np.inf)
                 min_dist_in_x = np.min(dist_X)

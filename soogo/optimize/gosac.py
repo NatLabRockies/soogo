@@ -19,10 +19,9 @@ import time
 import logging
 import warnings
 from typing import Callable, Optional
-
 import numpy as np
 
-from pymoo.termination.default import DefaultMultiObjectiveTermination
+from pymoo.optimize import minimize as pymoo_minimize
 
 from ..acquisition import (
     GosacSample,
@@ -30,8 +29,9 @@ from ..acquisition import (
     MinimizeMOSurrogate,
     MultipleAcquisition,
 )
-from ..model import RbfModel, Surrogate, LinearRadialBasisFunction
+from ..model import RbfModel, Surrogate
 from .utils import OptimizeResult
+from ..integrations.pymoo import PymooProblem
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ def gosac(
     return_surrogate = True
     if surrogateModel is None:
         return_surrogate = False
-        surrogateModel = RbfModel(LinearRadialBasisFunction())
+        surrogateModel = RbfModel()
 
     # Initialize output
     out = OptimizeResult()
@@ -113,10 +113,8 @@ def gosac(
     # Fix nobj and fsample to account for constraints
     out.nobj = 1
     if out.nfev == 0:
-        if out.fsample.ndim == 1:
-            out.fsample = out.fsample.reshape(-1, 1)
-        out.fsample = np.hstack(
-            (np.full((len(out.fsample), 1), np.nan), out.fsample)
+        out.fsample = np.column_stack(
+            (np.full(len(out.fsample), np.nan), out.fsample)
         )
 
     # Initialize best values if a feasible solution is found at the start
@@ -154,12 +152,11 @@ def gosac(
     acquisition1 = MinimizeMOSurrogate(
         rtol=rtol, seed=rng.integers(np.iinfo(np.int32).max).item()
     )
-    acquisition1.optimizer.termination = DefaultMultiObjectiveTermination(
-        n_max_gen=10
-    )
-    acquisition1.mi_optimizer.termination = DefaultMultiObjectiveTermination(
-        n_max_gen=10
-    )
+    if gdim == 1:
+        problem1 = PymooProblem(surrogateModel, bounds, surrogateModel.iindex)
+        optimizer1 = acquisition1.default_optimizer(
+            len(surrogateModel.iindex) > 0
+        )
     acquisition2 = MultipleAcquisition(
         (
             GosacSample(
@@ -195,9 +192,21 @@ def gosac(
 
         # Solve the surrogate multiobjective problem
         t0 = time.time()
-        bestCandidates = acquisition1.optimize(
-            surrogateModel, bounds, n=(maxeval - out.nfev)
-        )
+        if gdim == 1:
+            res = pymoo_minimize(
+                problem1,
+                optimizer1,
+                seed=rng.integers(np.iinfo(np.int32).max).item(),
+                verbose=False,
+            )
+            if res.X is not None:
+                bestCandidates = np.asarray([[res.X[i] for i in range(dim)]])
+            else:
+                bestCandidates = np.empty((0, dim))
+        else:
+            bestCandidates = acquisition1.optimize(
+                surrogateModel, bounds, n=(maxeval - out.nfev)
+            )
         tf = time.time()
         logger.info(
             "Solving the surrogate multiobjective problem: %d points in %f s",
@@ -205,22 +214,24 @@ def gosac(
             tf - t0,
         )
 
+        # Exit if no candidates were found
+        if len(bestCandidates) == 0:
+            raise RuntimeError(
+                "Acquisition function failed to provide new candidates. "
+                "Please try a different surrogate model or acquisition function."
+            )
+
         # Evaluate the surrogate at the best candidates
-        sCandidates = surrogateModel(bestCandidates)
+        sCandidates = np.atleast_2d(surrogateModel(bestCandidates))
 
         # Find the minimum number of constraint violations
-        constraintViolation = [
-            np.sum(sCandidates[i, :] > 0) for i in range(len(bestCandidates))
-        ]
-        minViolation = np.min(constraintViolation)
+        constraintViolation = np.sum(sCandidates > 0, axis=1)
+        minViolation = constraintViolation.min()
         idxMinViolation = np.where(constraintViolation == minViolation)[0]
 
         # Find the candidate with the minimum violation
         idxSelected = np.argmin(
-            [
-                np.sum(np.maximum(sCandidates[i, :], 0.0))
-                for i in idxMinViolation
-            ]
+            np.sum(np.maximum(sCandidates[idxMinViolation], 0.0), axis=1)
         )
         xselected = bestCandidates[idxSelected, :].reshape(1, -1)
 

@@ -22,7 +22,6 @@ import logging
 from typing import Optional
 
 from pymoo.optimize import minimize as pymoo_minimize
-from pymoo.termination.default import DefaultSingleObjectiveTermination
 
 from .base import Acquisition
 from ..model import RbfModel
@@ -98,16 +97,6 @@ class TargetValueAcquisition(Acquisition):
 
         super().__init__(**kwargs)
         self.rng = np.random.default_rng(seed)
-
-        # Use termination criteria based on the relative tolerance. This is used
-        # to reduce the time spent in the optimization process.
-        default_termination = DefaultSingleObjectiveTermination(
-            xtol=self.rtol, period=3
-        )
-        if "optimizer" not in kwargs:
-            self.optimizer.termination = default_termination
-        if "mi_optimizer" not in kwargs:
-            self.mi_optimizer.termination = default_termination
 
     @staticmethod
     def bumpiness_measure(

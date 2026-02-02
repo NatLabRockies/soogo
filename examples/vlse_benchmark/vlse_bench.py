@@ -88,7 +88,7 @@ def run_optimizer(
     # integrality constraints
     model = deepcopy(algo["model"])
     if isinstance(model, rbf.RbfModel):
-        model.iindex = tuple(
+        model._iindex = tuple(
             i
             for i in range(nArgs)
             if isinstance(bounds[i][0], int) and isinstance(bounds[i][1], int)

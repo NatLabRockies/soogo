@@ -135,10 +135,9 @@ class OptimizeResult:
         else:
             # Initialize nobj and fsample
             self.nobj = surrogateModel.ntarget
-            self.fsample = np.empty(
-                maxeval if self.nobj <= 1 else (maxeval, self.nobj)
+            self.fsample = np.full(
+                maxeval if self.nobj <= 1 else (maxeval, self.nobj), np.nan
             )
-            self.fsample[:] = np.nan
 
     def init_best_values(
         self, surrogateModel: Optional[Surrogate] = None

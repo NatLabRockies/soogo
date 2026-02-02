@@ -20,14 +20,11 @@ __authors__ = ["Weslley S. Pereira"]
 import numpy as np
 from typing import Optional
 
-from pymoo.algorithms.moo.nsga2 import NSGA2
-from pymoo.core.mixed import MixedVariableGA, MixedVariableMating
-from pymoo.operators.survival.rank_and_crowding import RankAndCrowding
 from pymoo.optimize import minimize as pymoo_minimize
 
 from .base import Acquisition
 from ..model import Surrogate
-from ..integrations.pymoo import PymooProblem, ListDuplicateElimination
+from ..integrations.pymoo import PymooProblem
 from .utils import FarEnoughSampleFilter
 
 
@@ -50,17 +47,9 @@ class MinimizeMOSurrogate(Acquisition):
     def __init__(
         self, optimizer=None, mi_optimizer=None, seed=None, **kwargs
     ) -> None:
-        if optimizer is None:
-            optimizer = NSGA2()
-        if mi_optimizer is None:
-            mi_optimizer = MixedVariableGA(
-                eliminate_duplicates=ListDuplicateElimination(),
-                mating=MixedVariableMating(
-                    eliminate_duplicates=ListDuplicateElimination()
-                ),
-                survival=RankAndCrowding(),
-            )
-        super().__init__(optimizer, mi_optimizer, **kwargs)
+        super().__init__(
+            optimizer, mi_optimizer, multi_objective=True, **kwargs
+        )
         self.rng = np.random.default_rng(seed)
 
     def optimize(
@@ -82,6 +71,12 @@ class MinimizeMOSurrogate(Acquisition):
         :return: k-by-dim matrix with the selected points.
         """
         dim = len(bounds)
+
+        if surrogateModel.ntarget < 2:
+            raise ValueError(
+                "The surrogate model must have at least two targets "
+                "to perform multi-objective optimization."
+            )
 
         # Report unused kwargs
         super().report_unused_optimize_kwargs(kwargs)
