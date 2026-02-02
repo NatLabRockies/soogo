@@ -174,7 +174,7 @@ process.</p>
 <p>Acquisition functions for surrogate optimization.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="soogo.acquisition.base.Acquisition">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">soogo.acquisition.base.</span></span><span class="sig-name descname"><span class="pre">Acquisition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mi_optimizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">termination</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="soogo.html#soogo.termination.TerminationCondition" title="soogo.termination.TerminationCondition"><span class="pre">soogo.termination.TerminationCondition</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#soogo.acquisition.base.Acquisition" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">soogo.acquisition.base.</span></span><span class="sig-name descname"><span class="pre">Acquisition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mi_optimizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">termination</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="soogo.html#soogo.termination.TerminationCondition" title="soogo.termination.TerminationCondition"><span class="pre">soogo.termination.TerminationCondition</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multi_objective</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_max_evals_optimizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#soogo.acquisition.base.Acquisition" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>Base class for acquisition functions.</p>
 <p>This an abstract class. Subclasses must implement the method
@@ -192,7 +192,13 @@ function. Default is Differential Evolution (DE) from pymoo.</p></li>
 <li><p><strong>mi_optimizer</strong> – Mixed-integer optimizer to be used for the acquisition (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)
 function. Default is Genetic Algorithm (MixedVariableGA) from pymoo.</p></li>
 <li><p><strong>rtol</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – Minimum distance between a candidate point and the (default: <code class="docutils literal notranslate"><span class="pre">1e-06</span></code>)
-previously selected points relative to the domain size. Default is 1e-6.</p></li>
+previously selected points relative to the domain size.</p></li>
+<li><p><strong>termination</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="soogo.html#soogo.termination.TerminationCondition" title="soogo.termination.TerminationCondition"><code class="xref py py-class docutils literal notranslate"><span class="pre">TerminationCondition</span></code></a>]) – Termination condition for the acquisition function. (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)
+Default is None.</p></li>
+<li><p><strong>multi_objective</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether the acquisition function is (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)
+multi-objective. Default is False.</p></li>
+<li><p><strong>n_max_evals_optimizer</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Maximum number of function evaluations for (default: <code class="docutils literal notranslate"><span class="pre">1000</span></code>)
+the optimizer. Default is 1000.</p></li>
 </ul>
 </dd>
 </dl>
@@ -216,6 +222,45 @@ used in <a class="reference internal" href="#soogo.acquisition.base.Acquisition.
 <dd><p>Minimum distance between a candidate point and the previously selected
 points.  This figures out as a constraint in the optimization problem
 solved in <a class="reference internal" href="#soogo.acquisition.base.Acquisition.optimize" title="soogo.acquisition.base.Acquisition.optimize"><code class="xref py py-meth docutils literal notranslate"><span class="pre">optimize()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="soogo.acquisition.base.Acquisition.termination">
+<span class="sig-name descname"><span class="pre">termination</span></span><a class="headerlink" href="#soogo.acquisition.base.Acquisition.termination" title="Permalink to this definition"></a></dt>
+<dd><p>Termination condition for the acquisition function.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="soogo.acquisition.base.Acquisition.DEFAULT_N_MAX_EVALS_OPTIMIZER">
+<span class="sig-name descname"><span class="pre">DEFAULT_N_MAX_EVALS_OPTIMIZER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1000</span></em><a class="headerlink" href="#soogo.acquisition.base.Acquisition.DEFAULT_N_MAX_EVALS_OPTIMIZER" title="Permalink to this definition"></a></dt>
+<dd><p>Default maximum number of function evaluations for the acquisition</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="soogo.acquisition.base.Acquisition.DEFAULT_RTOL">
+<span class="sig-name descname"><span class="pre">DEFAULT_RTOL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1e-06</span></em><a class="headerlink" href="#soogo.acquisition.base.Acquisition.DEFAULT_RTOL" title="Permalink to this definition"></a></dt>
+<dd><p>Default relative tolerance for the acquisition function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="soogo.acquisition.base.Acquisition.default_optimizer">
+<span class="sig-name descname"><span class="pre">default_optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mixed_integer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multi_objective</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_max_evals_optimizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#soogo.acquisition.base.Acquisition.default_optimizer" title="Permalink to this definition"></a></dt>
+<dd><p>Get the default optimizer for the acquisition function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mixed_integer</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether the acquisition function is
+mixed-integer.</p></li>
+<li><p><strong>multi_objective</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether the acquisition function is (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)
+multi-objective.</p></li>
+<li><p><strong>n_max_evals_optimizer</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Maximum number of function evaluations (default: <code class="docutils literal notranslate"><span class="pre">1000</span></code>)
+for the optimizer.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The default optimizer.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -1186,6 +1231,12 @@ Copied to <a class="reference internal" href="#soogo.acquisition.pareto_front.Pa
 <dt class="sig sig-object py" id="soogo.acquisition.pareto_front.ParetoFront.rng">
 <span class="sig-name descname"><span class="pre">rng</span></span><a class="headerlink" href="#soogo.acquisition.pareto_front.ParetoFront.rng" title="Permalink to this definition"></a></dt>
 <dd><p>Random number generator.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="soogo.acquisition.pareto_front.ParetoFront.so_optimizer">
+<span class="sig-name descname"><span class="pre">so_optimizer</span></span><a class="headerlink" href="#soogo.acquisition.pareto_front.ParetoFront.so_optimizer" title="Permalink to this definition"></a></dt>
+<dd><p>Single-objective optimizer to be used in step 1.</p>
 </dd></dl>
 
 <section id="id26">
