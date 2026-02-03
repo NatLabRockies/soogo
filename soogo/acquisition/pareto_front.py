@@ -129,7 +129,7 @@ class ParetoFront(Acquisition):
 
         def delta_f(tau):
             tauk = paretoModel(tau)
-            _tau = np.concatenate((tau[0:k], tauk, tau[k:]))
+            _tau = np.insert(tau, k, tauk, axis=1)
             return -tree.query(_tau)[0]
 
         # Minimize delta_f

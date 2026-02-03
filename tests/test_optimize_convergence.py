@@ -85,7 +85,7 @@ def make_soogo_constraint(prob_instance):
     )
 
 
-unconstrained_algorithms = [multistart_msrs, dycors, cptv, cptvl]
+unconstrained_algorithms = [multistart_msrs, dycors]
 unconstrained_problems = [
     pygoblet.standard.Trid,  # Bowl-shaped, range ~(-7, 350)
     lambda dim: ShiftedProblem(
@@ -153,7 +153,13 @@ def test_unconstrained_algorithms(
         )
 
 
-slow_algorithms = [surrogate_optimization, bayesian_optimization, fsapso]
+slow_algorithms = [
+    surrogate_optimization,
+    bayesian_optimization,
+    fsapso,
+    cptv,
+    cptvl,
+]
 
 
 @pytest.mark.parametrize("alg", slow_algorithms)
