@@ -30,6 +30,7 @@ from pymoo.termination.default import (
     DefaultSingleObjectiveTermination,
     DefaultMultiObjectiveTermination,
 )
+from pymoo.util.display.multi import MultiObjectiveOutput
 
 # Local imports
 from ..model import Surrogate
@@ -89,7 +90,7 @@ class Acquisition(ABC):
     DEFAULT_RTOL = 1e-6
 
     #: Default maximum number of function evaluations for the acquisition
-    DEFAULT_N_MAX_EVALS_OPTIMIZER = 1000
+    DEFAULT_N_MAX_EVALS_OPTIMIZER = 5000
 
     def __init__(
         self,
@@ -135,29 +136,29 @@ class Acquisition(ABC):
         :return: The default optimizer.
         """
         if not multi_objective:
+            termination = DefaultSingleObjectiveTermination(
+                xtol=self.rtol, n_max_evals=n_max_evals_optimizer
+            )
             if not mixed_integer:
-                return DE(
-                    termination=DefaultSingleObjectiveTermination(
-                        xtol=self.rtol, n_max_evals=n_max_evals_optimizer
-                    )
-                )
+                optim = DE()
+                optim.termination = termination
+                return optim
             else:
                 return MixedVariableGA(
                     eliminate_duplicates=ListDuplicateElimination(),
                     mating=MixedVariableMating(
                         eliminate_duplicates=ListDuplicateElimination()
                     ),
-                    termination=DefaultSingleObjectiveTermination(
-                        xtol=self.rtol, n_max_evals=n_max_evals_optimizer
-                    ),
+                    termination=termination,
                 )
         else:
+            termination = DefaultMultiObjectiveTermination(
+                xtol=self.rtol, n_max_evals=n_max_evals_optimizer
+            )
             if not mixed_integer:
-                return NSGA2(
-                    termination=DefaultMultiObjectiveTermination(
-                        xtol=self.rtol, n_max_evals=n_max_evals_optimizer
-                    )
-                )
+                optim = NSGA2()
+                optim.termination = termination
+                return optim
             else:
                 return MixedVariableGA(
                     eliminate_duplicates=ListDuplicateElimination(),
@@ -165,9 +166,8 @@ class Acquisition(ABC):
                         eliminate_duplicates=ListDuplicateElimination()
                     ),
                     survival=RankAndCrowding(),
-                    termination=DefaultMultiObjectiveTermination(
-                        xtol=self.rtol, n_max_evals=n_max_evals_optimizer
-                    ),
+                    output=MultiObjectiveOutput(),
+                    termination=termination,
                 )
 
     @classmethod

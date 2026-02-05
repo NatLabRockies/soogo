@@ -148,9 +148,8 @@ def gosac(
     surrogateModel.reserve(surrogateModel.ntrain + maxeval, dim, gdim)
 
     # Acquisition functions
-    rtol = 1e-3
     acquisition1 = MinimizeMOSurrogate(
-        rtol=rtol, seed=rng.integers(np.iinfo(np.int32).max).item()
+        seed=rng.integers(np.iinfo(np.int32).max).item()
     )
     if gdim == 1:
         problem1 = PymooProblem(surrogateModel, bounds, surrogateModel.iindex)
@@ -159,15 +158,8 @@ def gosac(
         )
     acquisition2 = MultipleAcquisition(
         (
-            GosacSample(
-                fun,
-                rtol=rtol,
-                seed=rng.integers(np.iinfo(np.int32).max).item(),
-            ),
-            MaximizeDistance(
-                rtol=rtol,
-                seed=rng.integers(np.iinfo(np.int32).max).item(),
-            ),
+            GosacSample(fun, seed=rng.integers(np.iinfo(np.int32).max).item()),
+            MaximizeDistance(seed=rng.integers(np.iinfo(np.int32).max).item()),
         )
     )
 

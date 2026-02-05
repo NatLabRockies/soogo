@@ -122,7 +122,7 @@ def shebo(
     if dim <= 0:
         raise ValueError("bounds must define at least one dimension")
 
-    rtol = 1e-3  # Relative tolerance for distance-based operations
+    rtol = Acquisition.DEFAULT_RTOL
     return_surrogate = (objSurrogate is not None) or (
         evalSurrogate is not None
     )  # Whether to return the surrogate models

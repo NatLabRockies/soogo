@@ -23,7 +23,6 @@ __credits__ = ["Weslley S. Pereira"]
 __deprecated__ = False
 
 import os
-import numpy as np
 import pickle
 import time
 from benchmark import (
@@ -196,8 +195,8 @@ algorithms["MLSL"] = {
     "optimizer": optimize.surrogate_optimization,
     "acquisition": acquisition.MultipleAcquisition(
         (
-            acquisition.MinimizeSurrogate(1, 0.005 * np.sqrt(2), seed=42),
-            acquisition.MaximizeDistance(rtol=0.005 * np.sqrt(2), seed=42),
+            acquisition.MinimizeSurrogate(seed=42),
+            acquisition.MaximizeDistance(seed=42),
         )
     ),
 }

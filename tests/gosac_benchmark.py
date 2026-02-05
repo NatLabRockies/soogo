@@ -760,3 +760,9 @@ if __name__ == "__main__":
         print(
             f"  Number of constraints: {p.gfun(np.ones((1, len(p.bounds)))).shape[1]}"
         )
+        print(
+            f"f(x_min) = {p.objf(np.array([p.xmin]))[0] if p.xmin else 'Unknown'} (f_min = {p.fmin})"
+        )
+        print(
+            f"g(x_min) = {p.gfun(np.array([p.xmin]))[0] if p.xmin else 'Unknown'}"
+        )

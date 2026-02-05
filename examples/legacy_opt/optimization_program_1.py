@@ -36,17 +36,14 @@ __deprecated__ = False
 
 from copy import deepcopy
 import importlib
-from math import sqrt
 from typing import Optional
 import numpy as np
 import matplotlib.pyplot as plt
 
 import soogo
 from soogo import OptimizeResult
-from soogo.sampling import dds_uniform_sample
 from soogo.acquisition import (
     CoordinatePerturbation,
-    TargetValueAcquisition,
     Acquisition,
     MinimizeSurrogate,
     MultipleAcquisition,
@@ -335,7 +332,7 @@ def main(config: int) -> list[OptimizeResult]:
         optres = read_and_run(
             data_file="datainput_BraninWithInteger",
             acquisitionFunc=CoordinatePerturbation(
-                sampler=dds_uniform_sample,
+                sampling_strategy="dds_uniform",
                 pool_size=200,
                 weightpattern=[0.3, 0.5, 0.8, 0.95],
                 sigma=BoundedParameter(0.2, 0.2 * 0.5**5, 0.2),
@@ -351,12 +348,7 @@ def main(config: int) -> list[OptimizeResult]:
     elif config == 5:
         optres = read_and_run(
             data_file="datainput_BraninWithInteger",
-            acquisitionFunc=MultipleAcquisition(
-                (
-                    TargetValueAcquisition(),
-                    MaximizeDistance(),
-                )
-            ),
+            acquisitionFunc=None,
             maxeval=100,
             Ntrials=3,
             batchSize=1,
@@ -388,10 +380,7 @@ def main(config: int) -> list[OptimizeResult]:
         optres = read_and_run(
             data_file="datainput_BraninWithInteger",
             acquisitionFunc=MultipleAcquisition(
-                (
-                    MinimizeSurrogate(100, 0.005 * sqrt(2)),
-                    MaximizeDistance(rtol=0.005 * sqrt(2)),
-                )
+                (MinimizeSurrogate(), MaximizeDistance())
             ),
             maxeval=100,
             Ntrials=3,

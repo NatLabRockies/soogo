@@ -32,10 +32,6 @@ class MinimizeMOSurrogate(Acquisition):
     """Obtain pareto-optimal sample points for the multi-objective surrogate
     model.
 
-    :param optimizer: Continuous multi-objective optimizer. If None, use
-        NSGA2 from pymoo.
-    :param mi_optimizer: Mixed-integer multi-objective optimizer. If None, use
-        MixedVariableGA from pymoo with RankAndCrowding survival strategy.
     :param seed: Seed for random number generator.
 
     .. attribute:: rng
@@ -44,12 +40,8 @@ class MinimizeMOSurrogate(Acquisition):
 
     """
 
-    def __init__(
-        self, optimizer=None, mi_optimizer=None, seed=None, **kwargs
-    ) -> None:
-        super().__init__(
-            optimizer, mi_optimizer, multi_objective=True, **kwargs
-        )
+    def __init__(self, seed=None, **kwargs) -> None:
+        super().__init__(multi_objective=True, **kwargs)
         self.rng = np.random.default_rng(seed)
 
     def optimize(

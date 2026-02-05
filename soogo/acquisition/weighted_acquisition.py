@@ -74,7 +74,7 @@ class WeightedAcquisition(Acquisition):
 
     def __init__(
         self,
-        pool_size: int = 100,
+        pool_size: int = Acquisition.DEFAULT_N_MAX_EVALS_OPTIMIZER,
         weightpattern=None,
         seed=None,
         **kwargs,

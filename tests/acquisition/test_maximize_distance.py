@@ -79,7 +79,7 @@ class TestMaximizeDistance:
         )
         y_train = np.array([0.0, 1.0, 2.0, 3.0, 4.0])
         mock_surrogate = MockSurrogateModel(x_train, y_train)
-        point = maximize_distance.optimize(mock_surrogate, bounds, n=1)
+        point = maximize_distance.optimize(mock_surrogate, bounds)
 
         # Check that the point is correct
         # Expected point was calculated with wolframalpha

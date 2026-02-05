@@ -96,7 +96,6 @@ if __name__ == "__main__":
         acquisitionFunc=CoordinatePerturbation(
             pool_size=nCand,
             weightpattern=[0.3, 0.5],
-            rtol=1e-3,
             sigma=BoundedParameter(0.2, 0.2 * 0.5**5, 0.2),
             perturbation_strategy="fixed",
             termination=RobustCondition(UnsuccessfulImprovement(0.001), 5),

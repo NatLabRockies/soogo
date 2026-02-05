@@ -48,10 +48,6 @@ class ParetoFront(Acquisition):
        point that minimizes the L1 distance to :math:`\\tau` to be part of the
        new sample.
 
-    :param optimizer: Continuous multi-objective optimizer. If None, use
-        NSGA2 from pymoo.
-    :param mi_optimizer: Mixed-integer multi-objective optimizer. If None, use
-        MixedVariableGA from pymoo with RankAndCrowding survival strategy.
     :param oldTV: Old target values to be avoided in the acquisition.
         Copied to :attr:`oldTV`.
     :param seed: Seed for random number generator.
@@ -76,13 +72,9 @@ class ParetoFront(Acquisition):
         https://doi.org/10.1287/ijoc.2017.0749
     """
 
-    def __init__(
-        self, optimizer=None, mi_optimizer=None, oldTV=(), seed=None, **kwargs
-    ) -> None:
+    def __init__(self, oldTV=(), seed=None, **kwargs) -> None:
         self.oldTV = np.array(oldTV)
-        super().__init__(
-            optimizer, mi_optimizer, multi_objective=True, **kwargs
-        )
+        super().__init__(multi_objective=True, **kwargs)
         self.rng = np.random.default_rng(seed)
         self.so_optimizer = self.default_optimizer(False)
 

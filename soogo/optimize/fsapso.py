@@ -107,7 +107,7 @@ def fsapso(
         acquisitionFunc = MultipleAcquisition(
             (
                 MinimizeSurrogate(
-                    1000, seed=rng.integers(np.iinfo(np.int32).max).item()
+                    seed=rng.integers(np.iinfo(np.int32).max).item()
                 ),
                 MaximizeDistance(
                     seed=rng.integers(np.iinfo(np.int32).max).item()

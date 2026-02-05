@@ -236,3 +236,10 @@ def test_constrained_algorithms(
         assert success_rate >= min_success_rate, (
             f"{alg.__name__} failed on {problem.__name__}: success rate {success_rate:.2f} < {min_success_rate}"
         )
+
+
+if __name__ == "__main__":
+    import logging
+
+    logging.basicConfig(level=logging.DEBUG)
+    test_unconstrained_quick(surrogate_optimization)

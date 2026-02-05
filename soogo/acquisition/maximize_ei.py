@@ -27,8 +27,9 @@ from pymoo.optimize import minimize as pymoo_minimize
 
 from .base import Acquisition
 from ..model import GaussianProcess
-from ..sampling import SpaceFillingSampler
+from ..sampling import random_sample
 from ..integrations.pymoo import PymooProblem
+from .utils import FarEnoughSampleFilter
 
 logger = logging.getLogger(__name__)
 
@@ -76,21 +77,18 @@ class MaximizeEI(Acquisition):
 
     def __init__(
         self,
-        sampler=None,
-        pool_size: int = 100,
+        pool_size: int = Acquisition.DEFAULT_N_MAX_EVALS_OPTIMIZER,
         avoid_clusters: bool = True,
+        n_max_evals_optimizer: Optional[int] = None,
         seed=None,
         **kwargs,
     ) -> None:
-        super().__init__(**kwargs)
+        super().__init__(
+            n_max_evals_optimizer=n_max_evals_optimizer or pool_size, **kwargs
+        )
         self.pool_size = pool_size
         self.avoid_clusters = avoid_clusters
         self.rng = np.random.default_rng(seed)
-        self.sampler = (
-            sampler
-            if sampler is not None
-            else SpaceFillingSampler(seed=self.rng)
-        )
 
     def optimize(
         self,
@@ -171,30 +169,14 @@ class MaximizeEI(Acquisition):
             xs = res.X
 
         # Returns xs if n == 1
-        if res.success and n == 1:
+        # print(f"MaximizeEI selected point with EI = {-res.F[0]}")
+        # print(f"At location: x = {res.X}")
+        # print(f"Success: {res.success}")
+        if n == 1:
             return np.asarray([xs])
 
         # Generate the complete pool of candidates
-        pool_size = self.pool_size
-        exclusion_set = (
-            np.vstack((exclusion_set, surrogateModel.X))
-            if exclusion_set is not None
-            else surrogateModel.X
-        )
-        if xs is not None:
-            exclusion_set = np.concatenate((exclusion_set, [xs]), axis=0)
-            pool_size -= 1
-        if xbest is not None:
-            exclusion_set = np.concatenate((exclusion_set, [xbest]), axis=0)
-            pool_size -= 1
-        x = (
-            self.sampler.generate(
-                self.pool_size, bounds, current_sample=exclusion_set
-            )
-            if pool_size > 0
-            else np.empty((0, dim))
-        )
-
+        x = random_sample(self.pool_size, bounds, seed=self.rng)
         if xs is not None:
             x = np.concatenate(([xs], x), axis=0)
         if xbest is not None:
@@ -287,4 +269,11 @@ class MaximizeEI(Acquisition):
             iBest[j] = np.argmax(score)
             eiCand[iBest[j]] = 0.0  # Remove this candidate expectancy
 
-        return x[iBest, :]
+        exclusion_set = (
+            np.vstack((exclusion_set, surrogateModel.X))
+            if exclusion_set is not None
+            else surrogateModel.X
+        )
+        return FarEnoughSampleFilter(exclusion_set, self.tol(bounds))(
+            x[iBest, :]
+        )

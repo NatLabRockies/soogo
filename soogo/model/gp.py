@@ -24,7 +24,10 @@ import scipy.optimize as scipy_opt
 # Scikit-learn imports
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF as GPkernelRBF
+from sklearn.gaussian_process.kernels import (
+    RBF as GPkernelRBF,
+    ConstantKernel as GPConstantKernel,
+)
 
 # Local imports
 from .base import Surrogate
@@ -40,7 +43,7 @@ class GaussianProcess(Surrogate):
     * :attr:`kernel`: Default is `sklearn.gaussian_process.kernels.RBF()`.
     * :attr:`optimizer`: Default is :meth:`_optimizer()`.
     * :attr:`normalize_y`: Default is `True`.
-    * :attr:`n_restarts_optimizer`: Default is 10.
+    * :attr:`n_restarts_optimizer`: Default is 1.
 
     Check other attributes and parameters for GaussianProcessRegressor at
     https://scikit-learn.org/dev/modules/generated/sklearn.gaussian_process.GaussianProcessRegressor.html.
@@ -68,13 +71,13 @@ class GaussianProcess(Surrogate):
 
         # Redefine some of the defaults in GaussianProcessRegressor:
         if "kernel" not in kwargs:
-            kwargs["kernel"] = GPkernelRBF()
+            kwargs["kernel"] = GPConstantKernel() * GPkernelRBF()
         if "optimizer" not in kwargs:
             kwargs["optimizer"] = self._optimizer
         if "normalize_y" not in kwargs:
             kwargs["normalize_y"] = True
         if "n_restarts_optimizer" not in kwargs:
-            kwargs["n_restarts_optimizer"] = 10
+            kwargs["n_restarts_optimizer"] = 1
 
         self.model = GaussianProcessRegressor(**kwargs)
 

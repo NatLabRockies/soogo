@@ -23,6 +23,7 @@ from scipy.spatial import KDTree
 from scipy.spatial.distance import cdist
 from scipy.special import gamma
 from scipy.optimize import minimize
+from scipy.stats.qmc import LatinHypercube
 from typing import Optional
 
 from .base import Acquisition
@@ -76,8 +77,6 @@ class MinimizeSurrogate(Acquisition):
     collected for the new sample.
 
     :param pool_size: Number of uniform candidates generated each iteration.
-    :param rtol: Minimum distance between a candidate and already selected
-        points, relative to the domain size. Default is ``1e-3``.
     :param seed: Seed or random number generator.
 
     .. attribute:: pool_size
@@ -98,9 +97,12 @@ class MinimizeSurrogate(Acquisition):
     """
 
     def __init__(
-        self, pool_size: int, rtol: float = 1e-3, seed=None, **kwargs
+        self,
+        pool_size: int = Acquisition.DEFAULT_N_MAX_EVALS_OPTIMIZER,
+        seed=None,
+        **kwargs,
     ) -> None:
-        super().__init__(rtol=rtol, **kwargs)
+        super().__init__(**kwargs)
         self.pool_size = pool_size
         self.rng = np.random.default_rng(seed)
 
@@ -147,12 +149,15 @@ class MinimizeSurrogate(Acquisition):
         )
 
         # Local space to store information
-        candidates = np.empty((self.pool_size * maxiter, dim))
-        distCandidates = np.empty(
-            (self.pool_size * maxiter, self.pool_size * maxiter)
+        candidates = random_sample(
+            self.pool_size,
+            bounds,
+            iindex=surrogateModel.iindex,
+            seed=LatinHypercube(d=dim, seed=self.rng),
         )
-        fcand = np.empty(self.pool_size * maxiter)
-        startpID = np.full((self.pool_size * maxiter,), False)
+        distCandidates = np.empty((self.pool_size, self.pool_size))
+        fcand = np.empty(self.pool_size)
+        startpID = np.full((self.pool_size,), False)
         selected = np.empty((n, dim))
 
         # Create a KDTree with the training data points
@@ -165,9 +170,10 @@ class MinimizeSurrogate(Acquisition):
 
         iter = 0
         k = 0
+        iter_pool_size = int(np.ceil(self.pool_size / maxiter))
         while iter < maxiter and k < n and remevals > 0:
-            iStart = iter * self.pool_size
-            iEnd = (iter + 1) * self.pool_size
+            iStart = iter * iter_pool_size
+            iEnd = min((iter + 1) * iter_pool_size, self.pool_size)
 
             # if computational budget is exhausted, then return
             if remevals <= iEnd - iStart:
@@ -178,14 +184,6 @@ class MinimizeSurrogate(Acquisition):
 
             # Consider only the best points to start local minimization
             counterLocalStart = iEnd // maxiter
-
-            # Choose candidate points uniformly in the search space
-            candidates[iStart:iEnd, :] = random_sample(
-                self.pool_size,
-                bounds,
-                iindex=surrogateModel.iindex,
-                seed=self.rng,
-            )
 
             # Compute the distance between the candidate points
             distCandidates[iStart:iEnd, iStart:iEnd] = cdist(
