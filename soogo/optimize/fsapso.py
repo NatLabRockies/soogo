@@ -309,11 +309,14 @@ def fsapso(
             break
 
     # Update output
-    out.sample.resize(out.nfev, dim)
-    out.fsample.resize(out.nfev)
+    out.sample = out.sample[:out.nfev]
+    out.fsample = out.fsample[:out.nfev]
 
     # Update surrogate model if it lives outside the function scope
     if return_surrogate:
-        surrogateModel.update(xselected, ySelected)
+        try:
+            surrogateModel.update(xselected, ySelected)
+        except Exception as e:
+            logger.error("Failed to update surrogate model: %s", e)
 
     return out

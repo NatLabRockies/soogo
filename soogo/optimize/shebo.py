@@ -410,18 +410,21 @@ def shebo(
             break
 
     # Update output
-    out.sample.resize(out.nfev, dim)
-    out.fsample.resize(out.nfev)
+    out.sample = out.sample[:out.nfev]
+    out.fsample = out.fsample[:out.nfev]
 
     # Update surrogate model if it lives outside the function scope
     if return_surrogate and evalSurrogate.ntrain > 0:
         t0 = time.time()
         feasible_idx = np.isfinite(ySelected)
-        evalSurrogate.update(xselected, feasible_idx.astype(float))
-        if np.any(feasible_idx):
-            objSurrogate.update(
-                xselected[feasible_idx], ySelected[feasible_idx]
-            )
+        try:
+            evalSurrogate.update(xselected, feasible_idx.astype(float))
+            if np.any(feasible_idx):
+                objSurrogate.update(
+                    xselected[feasible_idx], ySelected[feasible_idx]
+                )
+        except Exception as e:
+            logger.error("Failed to update surrogate model: %s", e)
         tf = time.time()
         logger.info("Time to update surrogate model: %f s", (tf - t0))
 

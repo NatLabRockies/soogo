@@ -163,7 +163,6 @@ def cptv(
     # do until max number of f-evals reached
     method = 0
     localSearchCounter = 0
-    k = 0
     while out.nfev < maxeval:
         if method == 0:
             if out.nfev > 0:
@@ -299,30 +298,24 @@ def cptv(
             # Switch method
             method = 0
 
-        # Update knew
-        knew = out_local.sample.shape[0]
-
         # Update output
         if out_local.fx < out.fx:
             out.x[:] = out_local.x
             out.fx = out_local.fx
-        out.sample[k : k + knew, :] = out_local.sample
-        out.fsample[k : k + knew] = out_local.fsample
+        out.sample[out.nfev : out.nfev + out_local.nfev, :] = out_local.sample
+        out.fsample[out.nfev : out.nfev + out_local.nfev] = out_local.fsample
         out.nfev = out.nfev + out_local.nfev
 
         # Call the callback function
         if callback is not None:
             callback(out)
 
-        # Update k
-        k = k + knew
-
         # Update counters
         out.nit = out.nit + 1
 
     # Update output
-    out.sample.resize(k, dim)
-    out.fsample.resize(k)
+    out.sample = out.sample[:out.nfev]
+    out.fsample = out.fsample[:out.nfev]
 
     return out
 

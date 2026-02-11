@@ -316,7 +316,10 @@ def gosac(
     # Update surrogate model if it lives outside the function scope
     if return_surrogate:
         t0 = time.time()
-        surrogateModel.update(xselected, ySelected)
+        try:
+            surrogateModel.update(xselected, ySelected)
+        except Exception as e:
+            logger.error("Failed to update surrogate model: %s", e)
         tf = time.time()
         logger.info("Time to update surrogate model: %f s", (tf - t0))
 

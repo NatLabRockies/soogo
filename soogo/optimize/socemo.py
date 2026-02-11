@@ -271,7 +271,7 @@ def socemo(
         #
 
         batchSize = min(len(xselected), maxeval - out.nfev)
-        xselected.resize(batchSize, dim)
+        xselected = xselected[:batchSize]
         logger.info("Number of new sample points: %d", batchSize)
 
         # Compute f(xselected)
@@ -297,14 +297,16 @@ def socemo(
             callback(out)
 
     # Update output
-    out.sample.resize(out.nfev, dim)
-    out.fsample.resize(out.nfev, objdim)
+    out.sample = out.sample[:out.nfev]
+    out.fsample = out.fsample[:out.nfev]
 
     # Update surrogate model if it lives outside the function scope
     if return_surrogate:
         t0 = time.time()
-        if out.nfev > 0:
+        try:
             surrogateModel.update(xselected, ySelected)
+        except Exception as e:
+            logger.error("Failed to update surrogate model: %s", e)
         tf = time.time()
         logger.info("Time to update surrogate model: %f s", (tf - t0))
 

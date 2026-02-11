@@ -209,7 +209,7 @@ def surrogate_optimization(
             out.fx = fxSelectedBest
 
         # Update x, y, out.nit and out.nfev
-        out.sample[out.nfev : out.nfev + selectedBatchSize, :] = xselected
+        out.sample[out.nfev : out.nfev + selectedBatchSize] = xselected
         out.fsample[out.nfev : out.nfev + selectedBatchSize] = ySelected
         out.nfev = out.nfev + selectedBatchSize
         out.nit = out.nit + 1
@@ -224,13 +224,16 @@ def surrogate_optimization(
             break
 
     # Update output
-    out.sample.resize(out.nfev, dim)
-    out.fsample.resize(out.nfev)
+    out.sample = out.sample[:out.nfev]
+    out.fsample = out.fsample[:out.nfev]
 
     # Update surrogate model if it lives outside the function scope
     if return_surrogate:
         t0 = time.time()
-        surrogateModel.update(xselected, ySelected)
+        try:
+            surrogateModel.update(xselected, ySelected)
+        except Exception as e:
+            logger.error("Failed to update surrogate model: %s", e)
         tf = time.time()
         logger.info("Time to update surrogate model: %f s", (tf - t0))
 

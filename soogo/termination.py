@@ -130,8 +130,8 @@ class UnsuccessfulImprovement(TerminationCondition):
         self._is_met = value_improvement <= self.threshold * self.value_range
 
         # Update the knowledge about the optimization problem
-        maxf = np.atleast_2d(out.fsample.T)[0, 0 : out.nfev].max()
-        minf = np.atleast_2d(out.fsample.T)[0, 0 : out.nfev].min()
+        maxf = np.atleast_2d(out.fsample.T)[0, 0 : out.nfev].max().item()
+        minf = np.atleast_2d(out.fsample.T)[0, 0 : out.nfev].min().item()
         if model is not None and len(model.Y) > 0:
             maxf = max(maxf, model.Y.max())
             minf = min(minf, model.Y.min())

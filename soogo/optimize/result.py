@@ -103,8 +103,7 @@ class OptimizeResult:
             raise ValueError("bounds must define at least one dimension")
 
         # Initialize sample array in this object
-        self.sample = np.empty((maxeval, dim))
-        self.sample[:] = np.nan
+        self.sample = np.full((maxeval, dim), np.nan)
 
         # If the surrogate is empty and no initial sample was given
         if surrogateModel.ntrain == 0:
@@ -182,10 +181,10 @@ class OptimizeResult:
                 self.fx = combined_y[iBest].item()
             else:
                 iBest = np.argmin(combined_y[:, 0]).item()
-                self.fx = combined_y[iBest].copy()
+                self.fx = combined_y[iBest]
 
-            self.x = combined_x[iBest].copy()
+            self.x = combined_x[iBest]
         else:
             iPareto = find_pareto_front(combined_y[:, 0 : self.nobj])
-            self.x = combined_x[iPareto].copy()
-            self.fx = combined_y[iPareto].copy()
+            self.x = combined_x[iPareto]
+            self.fx = combined_y[iPareto]
