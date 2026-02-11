@@ -51,7 +51,7 @@ from soogo import optimize, acquisition, sampling, OptimizeResult
 from pathlib import Path
 from copy import deepcopy
 
-from soogo.model import gp, rbf
+from soogo.model import rbf
 
 
 def run_optimizer(
@@ -127,7 +127,7 @@ def run_optimizer(
                 maxeval=maxEval - 2 * (nArgs + 1),
                 surrogateModel=modelIter,
                 acquisitionFunc=acquisitionFuncIter,
-                seed=1,  # Shouldn't be needed, but just in case
+                seed=2*i+1,
             )
         else:
             res = optimizer(
@@ -135,7 +135,7 @@ def run_optimizer(
                 bounds=bounds,
                 maxeval=maxEval - 2 * (nArgs + 1),
                 surrogateModel=modelIter,
-                seed=1,  # Shouldn't be needed, but just in case
+                seed=2*i+1,
             )
         optres.append(res)
 
@@ -217,7 +217,7 @@ if __name__ == "__main__":
         description="Run given algorithm and problem from the vlse benchmark"
     )
     parser.add_argument(
-        "-a", "--algorithm", choices=algorithms.keys(), default="CPTVl"
+        "-a", "--algorithm", choices=algorithms.keys(), default="DYCORS"
     )
     parser.add_argument(
         "-p", "--problem", choices=myFuncs.keys(), default="branin"

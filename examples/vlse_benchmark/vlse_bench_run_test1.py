@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import subprocess
+import sys
 
 # All:
 myRfuncs = (
@@ -19,8 +20,9 @@ myRfuncs = (
 )
 algorithms = ("SRS", "DYCORS", "CPTV", "CPTVl")
 
+args = sys.argv[1:]
 for func in myRfuncs:
     for a in algorithms:
         print(func)
         print(a)
-        subprocess.call(["sbatch", "./vlse_bench_run.sh", a, func])
+        subprocess.call(["sbatch"] + args + ["./vlse_bench_run.sh", a, func])
