@@ -67,13 +67,15 @@ def test_callback(minimize):
         assert (
             intermediate_result.sample.shape[1] == intermediate_result.x.size
         )
-
-    minimize(
-        lambda x: np.sum(x**2, axis=1),
-        ((-10, 3), (-1, 1)),
-        maxeval=10,
-        callback=callback,
-    )
+    try:
+        minimize(
+            lambda x: np.sum(x**2, axis=1),
+            ((-10, 3), (-1, 1)),
+            maxeval=10,
+            callback=callback,
+        )
+    except ImportError:
+        pytest.skip(f"{minimize.__name__} requires additional dependencies that are not installed.")
 
 
 @pytest.mark.parametrize(
@@ -104,16 +106,18 @@ def test_multiple_calls(minimize):
         )
 
     bounds = [[-32.768, 20], [-32.768, 32.768]]
+    try:
+        res0 = minimize(lambda x: [ackley(x[0], 2)], bounds, maxeval=10, seed=123)
+        res1 = minimize(lambda x: [ackley(x[0], 2)], bounds, maxeval=10, seed=123)
 
-    res0 = minimize(lambda x: [ackley(x[0], 2)], bounds, maxeval=10, seed=123)
-    res1 = minimize(lambda x: [ackley(x[0], 2)], bounds, maxeval=10, seed=123)
-
-    assert np.all(res0.x == res1.x)
-    assert np.all(res0.fx == res1.fx)
-    assert res0.nit == res1.nit
-    assert res0.nfev == res1.nfev
-    assert np.all(res0.sample == res1.sample)
-    assert np.all(res0.fsample == res1.fsample)
+        assert np.all(res0.x == res1.x)
+        assert np.all(res0.fx == res1.fx)
+        assert res0.nit == res1.nit
+        assert res0.nfev == res1.nfev
+        assert np.all(res0.sample == res1.sample)
+        assert np.all(res0.fsample == res1.fsample)
+    except ImportError:
+        pytest.skip(f"{minimize.__name__} requires additional dependencies that are not installed.")
 
 
 def test_batched_sampling():
@@ -133,11 +137,14 @@ def test_batched_sampling():
 
     bounds = [[-32.768, 20], [-32.768, 32.768]]
 
-    out = bayesian_optimization(
-        lambda x: [ackley(xi - 3.14) for xi in x],
-        bounds=bounds,
-        maxeval=100,
-        batchSize=10,
-        acquisitionFunc=MaximizeEI(pool_size=200, avoid_clusters=True),
-    )
-    assert out.nfev == 100
+    try:
+        out = bayesian_optimization(
+            lambda x: [ackley(xi - 3.14) for xi in x],
+            bounds=bounds,
+            maxeval=100,
+            batchSize=10,
+            acquisitionFunc=MaximizeEI(pool_size=200, avoid_clusters=True),
+        )
+        assert out.nfev == 100
+    except ImportError:
+        pytest.skip("scikit-learn is not installed, skipping Bayesian optimization tests.")

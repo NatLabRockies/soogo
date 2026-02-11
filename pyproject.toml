@@ -22,10 +22,13 @@ dependencies = [
     "numpy",
     "scipy",
     "pymoo",
-    "scikit-learn",
     "autograd",
     "networkx",
 ]
+
+[project.optional-dependencies]
+nomad = ["PyNomadBBO"]
+sklearn = ["scikit-learn"]
 
 [project.urls]
 Homepage = "https://github.com/NREL/soogo"

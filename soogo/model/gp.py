@@ -22,12 +22,18 @@ import numpy as np
 import scipy.optimize as scipy_opt
 
 # Scikit-learn imports
-from sklearn.exceptions import ConvergenceWarning
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import (
-    RBF as GPkernelRBF,
-    ConstantKernel as GPConstantKernel,
-)
+try:
+    from sklearn.exceptions import ConvergenceWarning
+    from sklearn.gaussian_process import GaussianProcessRegressor
+    from sklearn.gaussian_process.kernels import (
+        RBF as GPkernelRBF,
+        ConstantKernel as GPConstantKernel,
+    )
+except ImportError:
+    GaussianProcessRegressor = None
+    GPkernelRBF = None
+    GPConstantKernel = None
+    ConvergenceWarning = None
 
 # Local imports
 from .base import Surrogate
@@ -64,6 +70,11 @@ class GaussianProcess(Surrogate):
     """
 
     def __init__(self, scaler=None, **kwargs) -> None:
+        if GaussianProcessRegressor is None:
+            raise ImportError(
+                "scikit-learn is required to use the GaussianProcess surrogate model."
+            )
+
         super().__init__()
 
         # Scaler for x
@@ -167,7 +178,7 @@ class GaussianProcess(Surrogate):
         """Return the minimum design space size for a given space dimension."""
         return 1 if dim > 0 else 0
 
-    def check_initial_design(self, _sample: np.ndarray) -> int:
+    def check_initial_design(self, sample: np.ndarray) -> int:
         return 0
 
     def update(self, Xnew, ynew) -> None:

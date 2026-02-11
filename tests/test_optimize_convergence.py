@@ -133,18 +133,21 @@ def test_unconstrained_algorithms(
         run_vals = []
         soogo_objective = make_soogo_objective(prob_instance)
         for run in range(n_runs):
-            out = alg(
-                soogo_objective,
-                prob_instance.bounds(),
-                maxevals,
-                seed=run + 42,
-            )
-            if out.fx is None:
-                raise ValueError("Algorithm did not return a function value.")
-            run_vals.append(out.fx)
-            print(
-                f"Testing {alg.__name__} on {type(prob_instance).__name__}, run {run + 1}: fx = {out.fx}, best known = {min_value}"
-            )
+            try:
+                out = alg(
+                    soogo_objective,
+                    prob_instance.bounds(),
+                    maxevals,
+                    seed=run + 42,
+                )
+                if out.fx is None:
+                    raise ValueError("Algorithm did not return a function value.")
+                run_vals.append(out.fx)
+                print(
+                    f"Testing {alg.__name__} on {type(prob_instance).__name__}, run {run + 1}: fx = {out.fx}, best known = {min_value}"
+                )
+            except ImportError:
+                pytest.skip(f"{alg.__name__} requires additional dependencies that are not installed.")
         run_vals = np.array(run_vals)
         n_success = np.sum(np.abs(run_vals - min_value) < tol)
         success_rate = n_success / n_runs

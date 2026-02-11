@@ -37,7 +37,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
+          pip install -e .[nomad,sklearn]
       - name: Lint with ruff
         run: |
           python -m pip install flake8 jupyter
@@ -47,7 +47,7 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: Install test dependencies
         run: |
-          python -m pip install pytest pytest-timeout PyNomadBBO pygoblet
+          python -m pip install pytest pytest-timeout pygoblet
           python -m pip list
       - name: Test with pytest (fast tests)
         run: |

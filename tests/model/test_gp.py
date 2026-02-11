@@ -25,7 +25,10 @@ from soogo.model.gp import GaussianProcess, gp_expected_improvement
 @pytest.mark.parametrize("n", (10, 100))
 @pytest.mark.parametrize("copy_X_train", (True, False))
 def test_X(n: int, copy_X_train: bool):
-    gp = GaussianProcess(copy_X_train=copy_X_train)
+    try:
+        gp = GaussianProcess(copy_X_train=copy_X_train)
+    except ImportError:
+        pytest.skip("GaussianProcess could not be imported, likely because scikit-learn is not installed.")
 
     X0 = np.random.rand(n, 3)
     y = np.random.rand(n)

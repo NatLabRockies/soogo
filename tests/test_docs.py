@@ -296,15 +296,16 @@ class TestSphinxDocumentation:
             # Basic smoke test - instantiate some classes
             rbf_model = RbfModel()
             assert rbf_model is not None
-
-            gp_model = GaussianProcess()
-            assert gp_model is not None
-
-            # Test that classes and functions have expected attributes
             assert hasattr(WeightedAcquisition, "optimize")
             assert hasattr(OptimizeResult, "__init__")
             assert callable(surrogate_optimization)
-            assert callable(bayesian_optimization)
+
+            try:
+                gp_model = GaussianProcess()
+                assert gp_model is not None
+                assert callable(bayesian_optimization)
+            except ImportError:
+                pass # If scikit-learn is not installed, this will fail, but that's expected
 
         except ImportError as e:
             pytest.fail(

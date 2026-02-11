@@ -5,7 +5,7 @@
 groups = ["default", "example", "lint", "test"]
 strategy = []
 lock_version = "4.5.0"
-content_hash = "sha256:90dfa38681835143a98511d2a74cda6c3405500e0b55933dc80b5c051b66cb66"
+content_hash = "sha256:b8e4bc0e03a2c7d3f2667a9a652e39321f3381296e0bf022b986f710411a727b"
 
 [[metadata.targets]]
 requires_python = ">=3.9"
@@ -2021,7 +2021,9 @@ files = [
 [[package]]
 name = "pynomadbbo"
 version = "4.5.1"
-summary = ""
+requires_python = ">=3.8"
+summary = "Python interface to Nomad 4"
+groups = ["test"]
 files = [
     {file = "PyNomadBBO-4.5.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:4ed4861da93582591ba5970a385be51923c85f084b7112e4c1525a735e406f87"},
     {file = "PyNomadBBO-4.5.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:1819b6d5d7a1b338952ca820c9af51704877990929a64705b098a6a414baf88e"},

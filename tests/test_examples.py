@@ -279,7 +279,6 @@ class TestExamples:
             from soogo import gosac, socemo, surrogate_optimization  # noqa: F401
             from soogo import RbfModel  # noqa: F401
             from soogo import acquisition, sampling  # noqa: F401
-            # Note: GaussianProcess import might fail in some environments
         except ImportError as e:
             pytest.fail(f"Failed to import required modules: {e}")
 

@@ -200,11 +200,6 @@ algorithms["MLSL"] = {
         )
     ),
 }
-algorithms["GP"] = {
-    "model": gp.GaussianProcess(normalize_y=True, random_state=42),
-    "optimizer": optimize.bayesian_optimization,
-    "acquisition": acquisition.MaximizeEI(seed=42),
-}
 
 # Maximum number of evaluations per function. 100*n, where n is the input
 # dimension
