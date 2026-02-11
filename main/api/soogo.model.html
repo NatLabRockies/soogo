@@ -399,12 +399,12 @@ m-by-m-by-n matrix.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="soogo.model.gp.GaussianProcess.check_initial_design">
-<span class="sig-name descname"><span class="pre">check_initial_design</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#soogo.model.gp.GaussianProcess.check_initial_design" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">check_initial_design</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#soogo.model.gp.GaussianProcess.check_initial_design" title="Permalink to this definition"></a></dt>
 <dd><p>Returns an estimate on how many points need to be added to sample
 so that the design is sufficient to build a surrogate.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>sample</strong> – m-by-d matrix with m training points in a
+<dd class="field-odd"><p><strong>sample</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – m-by-d matrix with m training points in a
 d-dimensional space.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>

@@ -49,19 +49,12 @@
 <li class="toctree-l3"><a class="reference internal" href="acquisition.html">soogo.acquisition module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="gp.html">soogo.gp module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="optimize.html">soogo.optimize module</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">soogo.problem module</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#soogo.problem.ListDuplicateElimination"><code class="docutils literal notranslate"><span class="pre">ListDuplicateElimination</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#soogo.problem.MultiobjSurrogateProblem"><code class="docutils literal notranslate"><span class="pre">MultiobjSurrogateProblem</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#soogo.problem.MultiobjTVProblem"><code class="docutils literal notranslate"><span class="pre">MultiobjTVProblem</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#soogo.problem.ProblemNoConstraint"><code class="docutils literal notranslate"><span class="pre">ProblemNoConstraint</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#soogo.problem.ProblemWithConstraint"><code class="docutils literal notranslate"><span class="pre">ProblemWithConstraint</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">soogo.problem module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="rbf.html">soogo.rbf module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sampling.html">soogo.sampling module</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="soogo.html#module-soogo">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="soogo.html#module-contents">Module contents</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tests.html">tests package</a></li>
@@ -92,151 +85,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-soogo.problem">
-<span id="soogo-problem-module"></span><h1>soogo.problem module<a class="headerlink" href="#module-soogo.problem" title="Permalink to this heading"></a></h1>
-<p>Problem definitions for interfacing with pymoo.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="soogo.problem.ListDuplicateElimination">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">soogo.problem.</span></span><span class="sig-name descname"><span class="pre">ListDuplicateElimination</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#soogo.problem.ListDuplicateElimination" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">DefaultDuplicateElimination</span></code></p>
-<p>Specialization of DefaultDuplicateElimination for better performance
-in the problems we have.</p>
-<p>The particularity in this software is that the labels for the variables
-always go from 0 to n-1, so we can rely on that information to using
-ElementwiseDuplicateElimination.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="soogo.problem.ListDuplicateElimination.calc_dist">
-<span class="sig-name descname"><span class="pre">calc_dist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pop</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#soogo.problem.ListDuplicateElimination.calc_dist" title="Permalink to this definition"></a></dt>
-<dd><p>Compute the distances between the members of two populations.</p>
-<p>If <cite>other</cite> is None, compute the distance between <cite>pop</cite> with itself.</p>
-<p>This implementation uses the built-in Python <code class="xref py py-func docutils literal notranslate"><span class="pre">sorted()</span></code>
-function for sorting the keys of the dictionary. This is faster than
-using the runtime <code class="xref py py-attr docutils literal notranslate"><span class="pre">func()</span></code>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>pop</strong> – First population of size m.</p></li>
-<li><p><strong>other</strong> – Second population of size n. (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>m-by-n matrix with the distances.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="soogo.problem.MultiobjSurrogateProblem">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">soogo.problem.</span></span><span class="sig-name descname"><span class="pre">MultiobjSurrogateProblem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">surrogateModels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#soogo.problem.MultiobjSurrogateProblem" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Problem</span></code></p>
-<p>Mixed-integer multi-objective problem whose objective functions is the
-evaluation function of the surrogate models.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>surrogateModels</strong> – List of surrogate models. Stored in
-<a class="reference internal" href="#soogo.problem.MultiobjSurrogateProblem.surrogateModels" title="soogo.problem.MultiobjSurrogateProblem.surrogateModels"><code class="xref py py-attr docutils literal notranslate"><span class="pre">surrogateModels</span></code></a>.</p></li>
-<li><p><strong>bounds</strong> – List with the limits [x_min,x_max] of each direction x in
-the search space.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="soogo.problem.MultiobjSurrogateProblem.surrogateModels">
-<span class="sig-name descname"><span class="pre">surrogateModels</span></span><a class="headerlink" href="#soogo.problem.MultiobjSurrogateProblem.surrogateModels" title="Permalink to this definition"></a></dt>
-<dd><p>List of surrogate models.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="soogo.problem.MultiobjTVProblem">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">soogo.problem.</span></span><span class="sig-name descname"><span class="pre">MultiobjTVProblem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">surrogateModels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#soogo.problem.MultiobjTVProblem" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Problem</span></code></p>
-<p>Mixed-integer multi-objective problem whose objective functions is the
-entry-wise absolute difference between the surrogate models and the target
-values.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>surrogateModels</strong> – List of surrogate models. Stored in
-<a class="reference internal" href="#soogo.problem.MultiobjTVProblem.surrogateModels" title="soogo.problem.MultiobjTVProblem.surrogateModels"><code class="xref py py-attr docutils literal notranslate"><span class="pre">surrogateModels</span></code></a>.</p></li>
-<li><p><strong>tau</strong> – List of target values. Stored in <a class="reference internal" href="#soogo.problem.MultiobjTVProblem.tau" title="soogo.problem.MultiobjTVProblem.tau"><code class="xref py py-attr docutils literal notranslate"><span class="pre">tau</span></code></a>.</p></li>
-<li><p><strong>bounds</strong> – List with the limits [x_min,x_max] of each direction x in
-the search space.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="soogo.problem.MultiobjTVProblem.surrogateModels">
-<span class="sig-name descname"><span class="pre">surrogateModels</span></span><a class="headerlink" href="#soogo.problem.MultiobjTVProblem.surrogateModels" title="Permalink to this definition"></a></dt>
-<dd><p>List of surrogate models.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="soogo.problem.MultiobjTVProblem.tau">
-<span class="sig-name descname"><span class="pre">tau</span></span><a class="headerlink" href="#soogo.problem.MultiobjTVProblem.tau" title="Permalink to this definition"></a></dt>
-<dd><p>List of target values.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="soogo.problem.ProblemNoConstraint">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">soogo.problem.</span></span><span class="sig-name descname"><span class="pre">ProblemNoConstraint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">objfunc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iindex</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#soogo.problem.ProblemNoConstraint" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Problem</span></code></p>
-<p>Mixed-integer problem with no constraints for pymoo.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>objfunc</strong> – Objective function. Stored in <a class="reference internal" href="#soogo.problem.ProblemNoConstraint.objfunc" title="soogo.problem.ProblemNoConstraint.objfunc"><code class="xref py py-attr docutils literal notranslate"><span class="pre">objfunc</span></code></a>.</p></li>
-<li><p><strong>bounds</strong> – List with the limits [x_min,x_max] of each direction x in
-the search space.</p></li>
-<li><p><strong>iindex</strong> – Indices of the input space that are integer.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="soogo.problem.ProblemNoConstraint.objfunc">
-<span class="sig-name descname"><span class="pre">objfunc</span></span><a class="headerlink" href="#soogo.problem.ProblemNoConstraint.objfunc" title="Permalink to this definition"></a></dt>
-<dd><p>Objective function.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="soogo.problem.ProblemWithConstraint">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">soogo.problem.</span></span><span class="sig-name descname"><span class="pre">ProblemWithConstraint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">objfunc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gfunc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iindex</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_ieq_constr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#soogo.problem.ProblemWithConstraint" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Problem</span></code></p>
-<p>Mixed-integer problem with constraints for pymoo.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>objfunc</strong> – Objective function. Stored in <a class="reference internal" href="#soogo.problem.ProblemWithConstraint.objfunc" title="soogo.problem.ProblemWithConstraint.objfunc"><code class="xref py py-attr docutils literal notranslate"><span class="pre">objfunc</span></code></a>.</p></li>
-<li><p><strong>gfunc</strong> – Constraint function. Stored in <a class="reference internal" href="#soogo.problem.ProblemWithConstraint.gfunc" title="soogo.problem.ProblemWithConstraint.gfunc"><code class="xref py py-attr docutils literal notranslate"><span class="pre">gfunc</span></code></a>.</p></li>
-<li><p><strong>bounds</strong> – List with the limits [x_min,x_max] of each direction x in
-the search space.</p></li>
-<li><p><strong>iindex</strong> – Indices of the input space that are integer.</p></li>
-<li><p><strong>n_ieq_constr</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of inequality constraints. (default: <code class="docutils literal notranslate"><span class="pre">1</span></code>)</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="soogo.problem.ProblemWithConstraint.objfunc">
-<span class="sig-name descname"><span class="pre">objfunc</span></span><a class="headerlink" href="#soogo.problem.ProblemWithConstraint.objfunc" title="Permalink to this definition"></a></dt>
-<dd><p>Objective function.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="soogo.problem.ProblemWithConstraint.gfunc">
-<span class="sig-name descname"><span class="pre">gfunc</span></span><a class="headerlink" href="#soogo.problem.ProblemWithConstraint.gfunc" title="Permalink to this definition"></a></dt>
-<dd><p>Constraint function.</p>
-</dd></dl>
-
-</dd></dl>
-
+  <section id="soogo-problem-module">
+<h1>soogo.problem module<a class="headerlink" href="#soogo-problem-module" title="Permalink to this heading"></a></h1>
 </section>
 
 

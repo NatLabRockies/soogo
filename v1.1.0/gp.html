@@ -47,17 +47,14 @@
 <li class="toctree-l1 current"><a class="reference internal" href="blackboxoptim.html">blackboxoptim package</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="blackboxoptim.html#submodules">Submodules</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="acquisition.html">blackboxoptim.acquisition module</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">blackboxoptim.gp module</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#blackboxoptim.gp.GaussianProcess"><code class="docutils literal notranslate"><span class="pre">GaussianProcess</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">blackboxoptim.gp module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="optimize.html">blackboxoptim.optimize module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="problem.html">blackboxoptim.problem module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="rbf.html">blackboxoptim.rbf module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sampling.html">blackboxoptim.sampling module</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="blackboxoptim.html#module-blackboxoptim">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="blackboxoptim.html#module-contents">Module contents</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tests.html">tests package</a></li>
@@ -90,183 +87,6 @@
              
   <section id="blackboxoptim-gp-module">
 <h1>blackboxoptim.gp module<a class="headerlink" href="#blackboxoptim-gp-module" title="Permalink to this heading"></a></h1>
-<span class="target" id="module-blackboxoptim.gp"></span><p>Gaussian process module.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="blackboxoptim.gp.GaussianProcess">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">blackboxoptim.gp.</span></span><span class="sig-name descname"><span class="pre">GaussianProcess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxiterLBFGS</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">15000</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#blackboxoptim.gp.GaussianProcess" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">GaussianProcessRegressor</span></code></p>
-<p>Gaussian Process model.</p>
-<p>This model uses default attributes and parameters from
-GaussianProcessRegressor with the following exceptions:</p>
-<ul class="simple">
-<li><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">kernel</span></code>: Default is <cite>sklearn.gaussian_process.kernels.RBF()</cite>.</p></li>
-<li><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">optimizer</span></code>: Default is <code class="xref py py-meth docutils literal notranslate"><span class="pre">_optimizer()</span></code>.</p></li>
-<li><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">normalize_y</span></code>: Default is <cite>True</cite>.</p></li>
-<li><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">n_restarts_optimizer</span></code>: Default is 10.</p></li>
-</ul>
-<p>Check other attributes and parameters for GaussianProcessRegressor at
-<a class="reference external" href="https://scikit-learn.org/dev/modules/generated/sklearn.gaussian_process.GaussianProcessRegressor.html">https://scikit-learn.org/dev/modules/generated/sklearn.gaussian_process.GaussianProcessRegressor.html</a>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>scaler</strong> – Scaler for the input data. For details, see (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)
-<a class="reference external" href="https://scikit-learn.org/stable/modules/preprocessing.html">https://scikit-learn.org/stable/modules/preprocessing.html</a>.</p></li>
-<li><p><strong>maxiterLBFGS</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Maximum number of iterations for the L-BFGS-B optimizer. (default: <code class="docutils literal notranslate"><span class="pre">15000</span></code>)
-Stored in <a class="reference internal" href="#blackboxoptim.gp.GaussianProcess.maxiterLBFGS" title="blackboxoptim.gp.GaussianProcess.maxiterLBFGS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">maxiterLBFGS</span></code></a>.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="blackboxoptim.gp.GaussianProcess.maxiterLBFGS">
-<span class="sig-name descname"><span class="pre">maxiterLBFGS</span></span><a class="headerlink" href="#blackboxoptim.gp.GaussianProcess.maxiterLBFGS" title="Permalink to this definition"></a></dt>
-<dd><p>Maximum number of iterations for the L-BFGS-B optimizer. Used in the
-training of the gaussian process.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="blackboxoptim.gp.GaussianProcess.scaler">
-<span class="sig-name descname"><span class="pre">scaler</span></span><a class="headerlink" href="#blackboxoptim.gp.GaussianProcess.scaler" title="Permalink to this definition"></a></dt>
-<dd><p>Scaler used to preprocess input data.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="blackboxoptim.gp.GaussianProcess.__call__">
-<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#blackboxoptim.gp.GaussianProcess.__call__" title="Permalink to this definition"></a></dt>
-<dd><p>Evaluates the model at one or multiple points.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – m-by-d matrix with m point coordinates in a d-dimensional
-space.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</p>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p><ul class="simple">
-<li><p>Mean value predicted by the GP model on each of the input points.</p></li>
-<li><p>Std value predicted by the GP model on each of the input points.</p></li>
-</ul>
-</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="blackboxoptim.gp.GaussianProcess.check_initial_design">
-<span class="sig-name descname"><span class="pre">check_initial_design</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#blackboxoptim.gp.GaussianProcess.check_initial_design" title="Permalink to this definition"></a></dt>
-<dd><p>Check if the sample is able to generate a valid surrogate.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>sample</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – m-by-d matrix with m training points in a d-dimensional
-space.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="blackboxoptim.gp.GaussianProcess.eval_kernel">
-<span class="sig-name descname"><span class="pre">eval_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#blackboxoptim.gp.GaussianProcess.eval_kernel" title="Permalink to this definition"></a></dt>
-<dd><p>Evaluate the kernel function at a pair (x,y).</p>
-<p>The structure of the kernel is the same as the one passed as parameter
-but with optimized hyperparameters.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> – First entry in the tuple (x,y).</p></li>
-<li><p><strong>y</strong> – Second entry in the tuple (x,y). If None, use x. (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="blackboxoptim.gp.GaussianProcess.get_iindex">
-<span class="sig-name descname"><span class="pre">get_iindex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#blackboxoptim.gp.GaussianProcess.get_iindex" title="Permalink to this definition"></a></dt>
-<dd><p>Return iindex, the sequence of integer variable indexes.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="blackboxoptim.gp.GaussianProcess.min_design_space_size">
-<span class="sig-name descname"><span class="pre">min_design_space_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#blackboxoptim.gp.GaussianProcess.min_design_space_size" title="Permalink to this definition"></a></dt>
-<dd><p>Return the minimum design space size for a given space dimension.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="blackboxoptim.gp.GaussianProcess.ntrain">
-<span class="sig-name descname"><span class="pre">ntrain</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#blackboxoptim.gp.GaussianProcess.ntrain" title="Permalink to this definition"></a></dt>
-<dd><p>Get the number of sampled points.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="blackboxoptim.gp.GaussianProcess.update">
-<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Xnew</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ynew</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#blackboxoptim.gp.GaussianProcess.update" title="Permalink to this definition"></a></dt>
-<dd><p>Updates the model with new pairs of data (x,y).</p>
-<p>When the default optimizer method, <code class="xref py py-meth docutils literal notranslate"><span class="pre">_optimizer()</span></code>, is used as
-<code class="xref py py-attr docutils literal notranslate"><span class="pre">optimizer</span></code>, this routine reports different warnings compared to
-<cite>sklearn.gaussian_process.GaussianProcessRegressor.fit()</cite>. The latter
-reports any convergence failure in L-BFGS-B. This implementation reports
-the last convergence failure in the multiple L-BFGS-B runs only if there
-all the runs end up failing. The number of optimization runs is
-<code class="xref py py-attr docutils literal notranslate"><span class="pre">n_restarts_optimizer</span></code> + 1.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>Xnew</strong> – m-by-d matrix with m point coordinates in a d-dimensional
-space.</p></li>
-<li><p><strong>ynew</strong> – Function values on the sampled points.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="blackboxoptim.gp.GaussianProcess.xtrain">
-<span class="sig-name descname"><span class="pre">xtrain</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="headerlink" href="#blackboxoptim.gp.GaussianProcess.xtrain" title="Permalink to this definition"></a></dt>
-<dd><p>Get the training data points.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>m-by-d matrix with m training points in a d-dimensional space.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="blackboxoptim.gp.GaussianProcess.ytrain">
-<span class="sig-name descname"><span class="pre">ytrain</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="headerlink" href="#blackboxoptim.gp.GaussianProcess.ytrain" title="Permalink to this definition"></a></dt>
-<dd><p>Get f(x) for the sampled points.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
 </section>
 
 
