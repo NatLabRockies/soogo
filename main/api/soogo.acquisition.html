@@ -1461,7 +1461,7 @@ used to train the surrogate.</p></li>
 <p>Utility functions for acquisition methods.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="soogo.acquisition.utils.FarEnoughSampleFilter">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">soogo.acquisition.utils.</span></span><span class="sig-name descname"><span class="pre">FarEnoughSampleFilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#soogo.acquisition.utils.FarEnoughSampleFilter" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">soogo.acquisition.utils.</span></span><span class="sig-name descname"><span class="pre">FarEnoughSampleFilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">approach</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'independent_set'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#soogo.acquisition.utils.FarEnoughSampleFilter" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Filter candidate points that are too close to existing points.</p>
 <p>This utility class filters out candidates that are within a minimum
@@ -1471,6 +1471,10 @@ distance threshold from already sampled points.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>X</strong> – Matrix of existing sample points (n x d).</p></li>
 <li><p><strong>tol</strong> – Minimum distance threshold.</p></li>
+<li><p><strong>approach</strong> – Method to select points when multiple candidates are close (default: <code class="docutils literal notranslate"><span class="pre">'independent_set'</span></code>)
+to each other. Options are:
+“independent_set” (default) which uses a maximum independent set
+algorithm, and “greedy” which uses a simple greedy approach.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1487,6 +1491,13 @@ queries.</p>
 <dd><p>Minimum distance threshold. Points closer than this are filtered out.</p>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="soogo.acquisition.utils.FarEnoughSampleFilter.approach">
+<span class="sig-name descname"><span class="pre">approach</span></span><a class="headerlink" href="#soogo.acquisition.utils.FarEnoughSampleFilter.approach" title="Permalink to this definition"></a></dt>
+<dd><p>Method to select points when multiple candidates are close to each
+other.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="soogo.acquisition.utils.FarEnoughSampleFilter.__call__">
 <span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Xc</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#soogo.acquisition.utils.FarEnoughSampleFilter.__call__" title="Permalink to this definition"></a></dt>
@@ -1501,6 +1512,11 @@ enough from existing samples.</p>
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="soogo.acquisition.utils.FarEnoughSampleFilter.greedy_independent_set">
+<span class="sig-name descname"><span class="pre">greedy_independent_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#soogo.acquisition.utils.FarEnoughSampleFilter.greedy_independent_set" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="soogo.acquisition.utils.FarEnoughSampleFilter.indices">
@@ -1530,6 +1546,11 @@ enough from existing samples.</p>
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="soogo.acquisition.utils.FarEnoughSampleFilter.max_independent_set">
+<span class="sig-name descname"><span class="pre">max_independent_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#soogo.acquisition.utils.FarEnoughSampleFilter.max_independent_set" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 

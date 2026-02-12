@@ -705,6 +705,61 @@ Optim Eng 17, 177–203 (2016). <a class="reference external" href="https://doi.
 <section id="module-soogo.optimize.utils">
 <span id="soogo-optimize-utils-module"></span><h2>soogo.optimize.utils module<a class="headerlink" href="#module-soogo.optimize.utils" title="Permalink to this heading"></a></h2>
 <p>Utilities for Soogo optimize module.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="soogo.optimize.utils.PartialVariableFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">soogo.optimize.utils.</span></span><span class="sig-name descname"><span class="pre">PartialVariableFunction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fun</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#soogo.optimize.result.OptimizeResult" title="soogo.optimize.result.OptimizeResult"><span class="pre">soogo.optimize.result.OptimizeResult</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#soogo.optimize.utils.PartialVariableFunction" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Helper class to wrap a function that will be optimized with respect to a
+subset of the variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fun</strong> – Function to be minimized.</p></li>
+<li><p><strong>x</strong> – Base point in the space.</p></li>
+<li><p><strong>i</strong> – Index(s) that will be optimized.</p></li>
+<li><p><strong>out</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="#soogo.optimize.result.OptimizeResult" title="soogo.optimize.result.OptimizeResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">OptimizeResult</span></code></a>]) – Output array to store the result of the function evaluation. (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="soogo.optimize.utils.PartialVariableFunction.fun">
+<span class="sig-name descname"><span class="pre">fun</span></span><a class="headerlink" href="#soogo.optimize.utils.PartialVariableFunction.fun" title="Permalink to this definition"></a></dt>
+<dd><p>The function to be minimized, which takes a modified point x[i] as
+input.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="soogo.optimize.utils.PartialVariableFunction.x">
+<span class="sig-name descname"><span class="pre">x</span></span><a class="headerlink" href="#soogo.optimize.utils.PartialVariableFunction.x" title="Permalink to this definition"></a></dt>
+<dd><p>The base point in the space, which will be modified at index i.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="soogo.optimize.utils.PartialVariableFunction.i">
+<span class="sig-name descname"><span class="pre">i</span></span><a class="headerlink" href="#soogo.optimize.utils.PartialVariableFunction.i" title="Permalink to this definition"></a></dt>
+<dd><p>The index or indices of the variable(s) that will be optimized.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="soogo.optimize.utils.PartialVariableFunction.out">
+<span class="sig-name descname"><span class="pre">out</span></span><a class="headerlink" href="#soogo.optimize.utils.PartialVariableFunction.out" title="Permalink to this definition"></a></dt>
+<dd><p>An optional output object to log the results of function evaluations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="soogo.optimize.utils.PartialVariableFunction.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xi</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#soogo.optimize.utils.PartialVariableFunction.__call__" title="Permalink to this definition"></a></dt>
+<dd><p>Evaluate surrogate model at modified point x[i] = xi.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">fun</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xi</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#id0" title="Permalink to this definition"></a></dt>
+<dd><p>Evaluate surrogate model at modified point x[i] = xi.</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="soogo.optimize.utils.evaluate_and_log_point">
 <span class="sig-prename descclassname"><span class="pre">soogo.optimize.utils.</span></span><span class="sig-name descname"><span class="pre">evaluate_and_log_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fun</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">collections.abc.Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#soogo.optimize.result.OptimizeResult" title="soogo.optimize.result.OptimizeResult"><span class="pre">soogo.optimize.result.OptimizeResult</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="headerlink" href="#soogo.optimize.utils.evaluate_and_log_point" title="Permalink to this definition"></a></dt>
