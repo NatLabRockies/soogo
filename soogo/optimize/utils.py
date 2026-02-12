@@ -152,7 +152,7 @@ class PartialVariableFunction:
         self.i = i
         self.out = out
 
-    def fun(self, xi):
+    def __call__(self, xi):
         """Evaluate surrogate model at modified point x[i] = xi."""
         _x = self.x.copy()
         _x[self.i] = xi
@@ -164,5 +164,3 @@ class PartialVariableFunction:
             self.out.nfev += 1
 
         return _fx
-
-    __call__ = fun
