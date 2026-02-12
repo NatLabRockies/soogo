@@ -20,6 +20,7 @@ import logging
 import warnings
 from typing import Callable, Optional
 import numpy as np
+import functools
 
 from pymoo.optimize import minimize as pymoo_minimize
 
@@ -34,6 +35,17 @@ from .utils import OptimizeResult
 from ..integrations.pymoo import PymooProblem
 
 logger = logging.getLogger(__name__)
+
+
+def _combined_objectives(objective_fn, constraint_fn, x):
+    """Stack objective and constraint values.
+
+    :param objective_fn: Objective function to minimize.
+    :param constraint_fn: Constraint function to minimize (should return array).
+    :param x: Point to evaluate.
+    :return: Combined array of objective and constraint values.
+    """
+    return np.column_stack((objective_fn(x), constraint_fn(x)))
 
 
 def gosac(
@@ -102,7 +114,7 @@ def gosac(
     # Initialize output
     out = OptimizeResult()
     out.init(
-        lambda x: np.column_stack((fun(x), gfun(x))),
+        functools.partial(_combined_objectives, fun, gfun),
         bounds,
         0,
         maxeval,

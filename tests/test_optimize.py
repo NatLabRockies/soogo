@@ -67,6 +67,7 @@ def test_callback(minimize):
         assert (
             intermediate_result.sample.shape[1] == intermediate_result.x.size
         )
+
     try:
         minimize(
             lambda x: np.sum(x**2, axis=1),
@@ -75,7 +76,9 @@ def test_callback(minimize):
             callback=callback,
         )
     except ImportError:
-        pytest.skip(f"{minimize.__name__} requires additional dependencies that are not installed.")
+        pytest.skip(
+            f"{minimize.__name__} requires additional dependencies that are not installed."
+        )
 
 
 @pytest.mark.parametrize(
@@ -107,8 +110,12 @@ def test_multiple_calls(minimize):
 
     bounds = [[-32.768, 20], [-32.768, 32.768]]
     try:
-        res0 = minimize(lambda x: [ackley(x[0], 2)], bounds, maxeval=10, seed=123)
-        res1 = minimize(lambda x: [ackley(x[0], 2)], bounds, maxeval=10, seed=123)
+        res0 = minimize(
+            lambda x: [ackley(x[0], 2)], bounds, maxeval=10, seed=123
+        )
+        res1 = minimize(
+            lambda x: [ackley(x[0], 2)], bounds, maxeval=10, seed=123
+        )
 
         assert np.all(res0.x == res1.x)
         assert np.all(res0.fx == res1.fx)
@@ -117,7 +124,9 @@ def test_multiple_calls(minimize):
         assert np.all(res0.sample == res1.sample)
         assert np.all(res0.fsample == res1.fsample)
     except ImportError:
-        pytest.skip(f"{minimize.__name__} requires additional dependencies that are not installed.")
+        pytest.skip(
+            f"{minimize.__name__} requires additional dependencies that are not installed."
+        )
 
 
 def test_batched_sampling():
@@ -147,4 +156,6 @@ def test_batched_sampling():
         )
         assert out.nfev == 100
     except ImportError:
-        pytest.skip("scikit-learn is not installed, skipping Bayesian optimization tests.")
+        pytest.skip(
+            "scikit-learn is not installed, skipping Bayesian optimization tests."
+        )

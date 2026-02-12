@@ -22,6 +22,7 @@ import numpy as np
 from scipy.linalg import cholesky, solve_triangular
 from typing import Optional
 import logging
+import functools
 
 from pymoo.optimize import minimize as pymoo_minimize
 
@@ -32,6 +33,17 @@ from ..integrations.pymoo import PymooProblem
 from .utils import FarEnoughSampleFilter
 
 logger = logging.getLogger(__name__)
+
+
+def _negative_ei(surrogate, best_value, x):
+    """Negative expected improvement (for minimization).
+
+    :param surrogate: Surrogate model.
+    :param best_value: Best objective value so far.
+    :param x: Point to evaluate.
+    :return: Negative expected improvement at x.
+    """
+    return -surrogate.expected_improvement(x, best_value)
 
 
 class MaximizeEI(Acquisition):
@@ -156,7 +168,7 @@ class MaximizeEI(Acquisition):
 
         # Use the point that maximizes the EI
         problem = PymooProblem(
-            lambda x: -surrogateModel.expected_improvement(x, ybest),
+            functools.partial(_negative_ei, surrogateModel, ybest),
             bounds,
         )
         res = pymoo_minimize(

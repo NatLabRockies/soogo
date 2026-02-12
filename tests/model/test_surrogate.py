@@ -42,7 +42,9 @@ def test_gaussian_process_is_surrogate():
         gp = GaussianProcess()
         assert isinstance(gp, Surrogate)
     except ImportError:
-        pytest.skip("GaussianProcess could not be imported, likely because scikit-learn is not installed.")
+        pytest.skip(
+            "GaussianProcess could not be imported, likely because scikit-learn is not installed."
+        )
 
 
 def test_surrogate_interface_methods():

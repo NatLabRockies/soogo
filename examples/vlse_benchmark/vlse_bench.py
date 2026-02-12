@@ -127,7 +127,7 @@ def run_optimizer(
                 maxeval=maxEval - 2 * (nArgs + 1),
                 surrogateModel=modelIter,
                 acquisitionFunc=acquisitionFuncIter,
-                seed=2*i+1,
+                seed=2 * i + 1,
             )
         else:
             res = optimizer(
@@ -135,7 +135,7 @@ def run_optimizer(
                 bounds=bounds,
                 maxeval=maxEval - 2 * (nArgs + 1),
                 surrogateModel=modelIter,
-                seed=2*i+1,
+                seed=2 * i + 1,
             )
         optres.append(res)
 

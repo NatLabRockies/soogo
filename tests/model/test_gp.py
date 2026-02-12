@@ -28,7 +28,9 @@ def test_X(n: int, copy_X_train: bool):
     try:
         gp = GaussianProcess(copy_X_train=copy_X_train)
     except ImportError:
-        pytest.skip("GaussianProcess could not be imported, likely because scikit-learn is not installed.")
+        pytest.skip(
+            "GaussianProcess could not be imported, likely because scikit-learn is not installed."
+        )
 
     X0 = np.random.rand(n, 3)
     y = np.random.rand(n)

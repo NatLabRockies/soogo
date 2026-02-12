@@ -230,6 +230,10 @@ class FarEnoughSampleFilter:
 
     :param X: Matrix of existing sample points (n x d).
     :param tol: Minimum distance threshold.
+    :param approach: Method to select points when multiple candidates are close
+        to each other. Options are:
+        "independent_set" (default) which uses a maximum independent set
+        algorithm, and "greedy" which uses a simple greedy approach.
 
     .. attribute:: tree
 
@@ -239,11 +243,17 @@ class FarEnoughSampleFilter:
     .. attribute:: tol
 
         Minimum distance threshold. Points closer than this are filtered out.
+
+    .. attribute:: approach
+
+        Method to select points when multiple candidates are close to each
+        other.
     """
 
-    def __init__(self, X, tol):
+    def __init__(self, X, tol, approach="independent_set"):
         self.tree = KDTree(X)
         self.tol = tol
+        self.approach = approach
 
     def is_far_enough(self, x):
         """Check if a point is far enough from existing samples.
@@ -253,6 +263,28 @@ class FarEnoughSampleFilter:
         """
         dist, _ = self.tree.query(x.reshape(1, -1))
         return dist[0] >= self.tol
+
+    def max_independent_set(self, X):
+        dist = cdist(X, X)
+        np.fill_diagonal(dist, np.inf)
+        g = nx.Graph()
+        g.add_nodes_from(range(len(X)))
+        g.add_edges_from(
+            [
+                (i, j)
+                for i in range(len(X))
+                for j in range(i + 1, len(X))
+                if dist[i, j] < self.tol
+            ]
+        )
+        return maximum_independent_set(g)
+
+    def greedy_independent_set(self, X):
+        idx = []
+        for i in range(len(X)):
+            if all(np.linalg.norm(X[i] - X[j]) >= self.tol for j in idx):
+                idx.append(i)
+        return idx
 
     def indices(self, Xc):
         """Filter candidates based on minimum distance criterion.
@@ -266,19 +298,18 @@ class FarEnoughSampleFilter:
         Xc0 = Xc[mask0]
 
         # Find the maximum independent set among the remaining points
-        dist = cdist(Xc0, Xc0)
-        np.fill_diagonal(dist, np.inf)
-        g = nx.Graph()
-        g.add_nodes_from(range(len(Xc0)))
-        g.add_edges_from(
-            [
-                (i, j)
-                for i in range(len(Xc0))
-                for j in range(i + 1, len(Xc0))
-                if dist[i, j] < self.tol
-            ]
-        )
-        idx = maximum_independent_set(g)
+        if self.approach == "independent_set":
+            try:
+                idx = self.max_independent_set(Xc0)
+            except Exception as e:
+                logger.warning(
+                    "Error in maximum independent set computation: %s. "
+                    "Falling back to a greedy approach.",
+                    e,
+                )
+                idx = self.greedy_independent_set(Xc0)
+        else:
+            idx = self.greedy_independent_set(Xc0)
 
         # Recover original indices
         original_indices = np.where(mask0)[0]

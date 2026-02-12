@@ -111,11 +111,13 @@ gosac_p.append(
 # Problem 1
 gosac_p.append(
     Problem(
-        lambda x: 2 * x[:, 0]
-        + 3 * x[:, 1]
-        + 1.5 * x[:, 2]
-        + 2 * x[:, 3]
-        - 0.5 * x[:, 4],
+        lambda x: (
+            2 * x[:, 0]
+            + 3 * x[:, 1]
+            + 1.5 * x[:, 2]
+            + 2 * x[:, 3]
+            - 0.5 * x[:, 4]
+        ),
         lambda x: np.transpose(
             [
                 x[:, 0] ** 2 + x[:, 2] - 1.25,
@@ -135,11 +137,13 @@ gosac_p.append(
 # Problem 2
 gosac_p.append(
     Problem(
-        lambda x: 2 * x[:, 0]
-        + 3 * x[:, 1]
-        + 1.5 * x[:, 2]
-        + 2 * x[:, 3]
-        - 0.5 * x[:, 4],
+        lambda x: (
+            2 * x[:, 0]
+            + 3 * x[:, 1]
+            + 1.5 * x[:, 2]
+            + 2 * x[:, 3]
+            - 0.5 * x[:, 4]
+        ),
         lambda x: np.transpose(
             [
                 x[:, 0] + x[:, 2] - 1.6,
@@ -157,13 +161,15 @@ gosac_p.append(
 # Problem 3
 gosac_p.append(
     Problem(
-        lambda x: (x[:, 4] - 1) ** 2
-        + (x[:, 5] - 2) ** 2
-        + (x[:, 6] - 1) ** 2
-        - np.log(x[:, 7] + 1)
-        + (x[:, 8] - 1) ** 2
-        + (x[:, 9] - 2) ** 2
-        + (x[:, 10] - 3) ** 2,
+        lambda x: (
+            (x[:, 4] - 1) ** 2
+            + (x[:, 5] - 2) ** 2
+            + (x[:, 6] - 1) ** 2
+            - np.log(x[:, 7] + 1)
+            + (x[:, 8] - 1) ** 2
+            + (x[:, 9] - 2) ** 2
+            + (x[:, 10] - 3) ** 2
+        ),
         lambda x: np.transpose(
             [
                 x[:, 0] + x[:, 1] + x[:, 2] + x[:, 8] + x[:, 9] + x[:, 10] - 5,
@@ -207,12 +213,14 @@ gosac_p.append(
 # Problem 4
 gosac_p.append(
     Problem(
-        lambda x: -np.abs(
-            (
-                np.sum(np.cos(x) ** 4, axis=1)
-                - 2 * np.prod(np.cos(x) ** 2, axis=1)
+        lambda x: (
+            -np.abs(
+                (
+                    np.sum(np.cos(x) ** 4, axis=1)
+                    - 2 * np.prod(np.cos(x) ** 2, axis=1)
+                )
+                / np.sqrt(np.sum(np.arange(1, x.shape[1] + 1) * x**2, axis=1))
             )
-            / np.sqrt(np.sum(np.arange(1, x.shape[1] + 1) * x**2, axis=1))
         ),
         lambda x: np.transpose(
             [
@@ -257,10 +265,12 @@ gosac_p.append(
 gosac_p.append(
     Problem(
         # 5.3578547x23 + 0.8356891x1 x5 + 37.293239x1 − 40792.141
-        lambda x: 5.3578547 * x[:, 2] ** 2
-        + 0.8356891 * x[:, 0] * x[:, 4]
-        + 37.293239 * x[:, 0]
-        - 40792.141,
+        lambda x: (
+            5.3578547 * x[:, 2] ** 2
+            + 0.8356891 * x[:, 0] * x[:, 4]
+            + 37.293239 * x[:, 0]
+            - 40792.141
+        ),
         lambda x: np.transpose(
             [
                 -85.334407
@@ -304,16 +314,18 @@ gosac_p.append(
 # Problem 6
 gosac_p.append(
     Problem(
-        lambda x: (x[:, 0] - 10) ** 2
-        + 5 * (x[:, 1] - 12) ** 2
-        + x[:, 2] ** 4
-        + 3 * (x[:, 3] - 11) ** 2
-        + 10 * x[:, 4] ** 6
-        + 7 * x[:, 5] ** 2
-        + x[:, 6] ** 4
-        - 4 * x[:, 5] * x[:, 6]
-        - 10 * x[:, 5]
-        - 8 * x[:, 6],
+        lambda x: (
+            (x[:, 0] - 10) ** 2
+            + 5 * (x[:, 1] - 12) ** 2
+            + x[:, 2] ** 4
+            + 3 * (x[:, 3] - 11) ** 2
+            + 10 * x[:, 4] ** 6
+            + 7 * x[:, 5] ** 2
+            + x[:, 6] ** 4
+            - 4 * x[:, 5] * x[:, 6]
+            - 10 * x[:, 5]
+            - 8 * x[:, 6]
+        ),
         lambda x: np.transpose(
             [
                 2 * x[:, 0] ** 2
@@ -384,8 +396,9 @@ gosac_p.append(
 # Problem 8
 gosac_p.append(
     Problem(
-        lambda x: 1
-        - (1 / 30) * np.sum(np.cos(10 * x) * np.exp(-0.5 * x**2), axis=1),
+        lambda x: (
+            1 - (1 / 30) * np.sum(np.cos(10 * x) * np.exp(-0.5 * x**2), axis=1)
+        ),
         lambda x: np.reshape(
             30 - np.sum(np.abs(x * np.sin(x) + 0.1 * x), axis=1), (-1, 1)
         ),
@@ -431,9 +444,11 @@ gosac_p.append(
 gosac_p.append(
     Problem(
         # Bird test function
-        lambda x: (x[:, 0] - x[:, 1]) ** 2
-        + np.exp((1 - np.sin(x[:, 0])) ** 2) * np.cos(x[:, 1])
-        + np.exp((1 - np.cos(x[:, 1])) ** 2) * np.sin(x[:, 0]),
+        lambda x: (
+            (x[:, 0] - x[:, 1]) ** 2
+            + np.exp((1 - np.sin(x[:, 0])) ** 2) * np.cos(x[:, 1])
+            + np.exp((1 - np.cos(x[:, 1])) ** 2) * np.sin(x[:, 0])
+        ),
         # Rana test function
         lambda x: np.reshape(fRana(x) - 5, (-1, 1)),
         (0,),
@@ -535,22 +550,24 @@ gosac_p[-1].fmin = -106.7645
 # Problem 18
 gosac_p.append(
     Problem(
-        lambda x: 10
-        * x[:, 4]
-        * x[:, 6]
-        * x[:, 8]
-        * x[:, 9]
-        * x[:, 13]
-        * x[:, 14]
-        * x[:, 15]
-        + 7 * x[:, 0] * x[:, 1] * x[:, 2] * x[:, 3] * x[:, 7] * x[:, 10]
-        + x[:, 2] * x[:, 3] * x[:, 5] * x[:, 6] * x[:, 7]
-        + 12 * x[:, 2] * x[:, 3] * x[:, 7] * x[:, 10]
-        + 8 * x[:, 5] * x[:, 6] * x[:, 7] * x[:, 11]
-        + 3 * x[:, 5] * x[:, 6] * x[:, 8] * x[:, 13] * x[:, 15]
-        + x[:, 8] * x[:, 9] * x[:, 13] * x[:, 15]
-        + 5 * x[:, 4] * x[:, 9] * x[:, 13] * x[:, 14] * x[:, 15]
-        + 3 * x[:, 0] * x[:, 1] * x[:, 10] * x[:, 11],
+        lambda x: (
+            10
+            * x[:, 4]
+            * x[:, 6]
+            * x[:, 8]
+            * x[:, 9]
+            * x[:, 13]
+            * x[:, 14]
+            * x[:, 15]
+            + 7 * x[:, 0] * x[:, 1] * x[:, 2] * x[:, 3] * x[:, 7] * x[:, 10]
+            + x[:, 2] * x[:, 3] * x[:, 5] * x[:, 6] * x[:, 7]
+            + 12 * x[:, 2] * x[:, 3] * x[:, 7] * x[:, 10]
+            + 8 * x[:, 5] * x[:, 6] * x[:, 7] * x[:, 11]
+            + 3 * x[:, 5] * x[:, 6] * x[:, 8] * x[:, 13] * x[:, 15]
+            + x[:, 8] * x[:, 9] * x[:, 13] * x[:, 15]
+            + 5 * x[:, 4] * x[:, 9] * x[:, 13] * x[:, 14] * x[:, 15]
+            + 3 * x[:, 0] * x[:, 1] * x[:, 10] * x[:, 11]
+        ),
         lambda x: np.transpose(
             [
                 3

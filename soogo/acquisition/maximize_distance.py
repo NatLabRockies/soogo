@@ -19,6 +19,7 @@ __authors__ = ["Weslley S. Pereira", "Byron Selvage"]
 
 import numpy as np
 from typing import Optional
+import functools
 
 from pymoo.optimize import minimize as pymoo_minimize
 
@@ -26,6 +27,16 @@ from .base import Acquisition
 from ..model import Surrogate
 from ..integrations.pymoo import PymooProblem
 from .utils import FarEnoughSampleFilter
+
+
+def _negative_distance(tree, x):
+    """Compute negative distance to nearest neighbor.
+
+    :param tree: KDTree of previously sampled points.
+    :param x: Point to evaluate.
+    :return: Negative distance to nearest neighbor.
+    """
+    return -tree.query(x)[0]
 
 
 class MaximizeDistance(Acquisition):
@@ -86,7 +97,7 @@ class MaximizeDistance(Acquisition):
         filter = FarEnoughSampleFilter(exclusion_set, self.tol(bounds))
 
         problem = PymooProblem(
-            lambda x: -filter.tree.query(x)[0],
+            functools.partial(_negative_distance, filter.tree),
             bounds,
             iindex,
         )

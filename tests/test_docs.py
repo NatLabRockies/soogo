@@ -305,7 +305,7 @@ class TestSphinxDocumentation:
                 assert gp_model is not None
                 assert callable(bayesian_optimization)
             except ImportError:
-                pass # If scikit-learn is not installed, this will fail, but that's expected
+                pass  # If scikit-learn is not installed, this will fail, but that's expected
 
         except ImportError as e:
             pytest.fail(

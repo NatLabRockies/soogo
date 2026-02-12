@@ -224,8 +224,8 @@ def surrogate_optimization(
             break
 
     # Update output
-    out.sample = out.sample[:out.nfev]
-    out.fsample = out.fsample[:out.nfev]
+    out.sample = out.sample[: out.nfev]
+    out.fsample = out.fsample[: out.nfev]
 
     # Update surrogate model if it lives outside the function scope
     if return_surrogate:

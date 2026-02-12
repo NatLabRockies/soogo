@@ -28,9 +28,10 @@ from ..acquisition import (
     TargetValueAcquisition,
     CoordinatePerturbation,
     BoundedParameter,
+    FarEnoughSampleFilter,
 )
 from ..model import MedianLpfFilter, RbfModel
-from .utils import OptimizeResult
+from .utils import OptimizeResult, PartialVariableFunction
 from ..termination import RobustCondition, UnsuccessfulImprovement
 from .surrogate_optimization import surrogate_optimization
 from ..utils import report_unused_kwargs
@@ -256,42 +257,48 @@ def cptv(
                 else:
                     localSearchCounter += 1
         else:
+            # Initialize output for local search
+            n_loc = maxeval - out.nfev
+            out_local = OptimizeResult()
+            out_local.sample = np.zeros((n_loc, len(cindex)))
+            out_local.fsample = np.zeros(n_loc)
 
-            def func_continuous_search(x):
-                x_ = out.x.reshape(1, -1).copy()
-                x_[0, cindex] = x
-                return fun(x_)
-
-            out_local_ = minimize(
-                func_continuous_search,
+            # Use a callback function to record the samples and function values
+            # during the local search
+            out_scipy = minimize(
+                PartialVariableFunction(fun, out.x, cindex, out_local),
                 out.x[cindex],
                 method="Powell",
                 bounds=cbounds,
-                options={"maxfev": maxeval - out.nfev},
+                options={"maxfev": n_loc},
             )
-            assert out_local_.nfev <= (maxeval - out.nfev), (
-                f"Sanity check, {out_local_.nfev} <= ({maxeval} - {out.nfev}). We should adjust either `maxfun` or change the `method`"
+            assert out_scipy.nfev == out_local.nfev, (
+                f"Sanity check, {out_scipy.nfev} != {out_local.nfev}. Fix me!"
+            )
+            assert out_scipy.nfev <= n_loc, (
+                f"Sanity check, {out_scipy.nfev} <= {n_loc}. We should adjust either `maxfun` or change the `method`"
             )
 
-            out_local = OptimizeResult()
-            out_local.x = out.x.copy()
-            out_local.fx = out_local_.fun
-            out_local.nit = out_local_.nit
-            out_local.nfev = out_local_.nfev
-            out_local.sample = np.array(
-                [out.x for i in range(out_local_.nfev)]
-            )
-            out_local.fsample = np.array(
-                [out.fx for i in range(out_local_.nfev)]
-            )
-            out_local.x[cindex] = out_local_.x
-            out_local.sample[-1, cindex] = out_local_.x
-            out_local.fsample[-1] = out_local_.fun
+            # Update local output with the results of the local search
+            out_local.x = out.x
+            out_local.x[cindex] = out_scipy.x
+            out_local.fx = out_scipy.fun
+            out_local.nit = out_scipy.nit
+            _sample = np.zeros((out_local.nfev, dim))
+            _sample[:, cindex] = out_local.sample[: out_local.nfev]
+            out_local.sample = _sample
+            out_local.fsample = out_local.fsample[: out_local.nfev]
 
-            if out_local.fx < out.fx:
-                surrogateModel.update(
-                    out_local.x.reshape(1, -1), [out_local.fx]
-                )
+            # Update the surrogate model with the subset of samples that are
+            # far enough from the existing samples.
+            idx = FarEnoughSampleFilter(
+                surrogateModel.X,
+                acquisitionFunc.tol(bounds),
+                approach="greedy",
+            ).indices(out_local.sample[::-1])[::-1]
+            surrogateModel.update(
+                out_local.sample[idx], out_local.fsample[idx]
+            )
 
             logger.info("Local step ended after %d f evals.", out_local.nfev)
 
@@ -314,8 +321,8 @@ def cptv(
         out.nit = out.nit + 1
 
     # Update output
-    out.sample = out.sample[:out.nfev]
-    out.fsample = out.fsample[:out.nfev]
+    out.sample = out.sample[: out.nfev]
+    out.fsample = out.fsample[: out.nfev]
 
     return out
 

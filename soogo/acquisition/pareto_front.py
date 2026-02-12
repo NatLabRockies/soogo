@@ -21,6 +21,7 @@ __authors__ = ["Weslley S. Pereira"]
 import numpy as np
 from scipy.spatial import KDTree
 from typing import Optional
+import functools
 
 from pymoo.core.initialization import Initialization
 from pymoo.optimize import minimize as pymoo_minimize
@@ -31,6 +32,17 @@ from ..model import LinearRadialBasisFunction, RbfModel, Surrogate
 from ..integrations.pymoo import PymooProblem
 from ..utils import find_pareto_front
 from .utils import FarEnoughSampleFilter
+
+
+def _distance_to_target(surrogate, target_value, x):
+    """Compute distance from surrogate prediction to target.
+
+    :param surrogate: Surrogate model.
+    :param target_value: Target value to compare against.
+    :param x: Point to evaluate.
+    :return: Distance from surrogate prediction at x to target_value.
+    """
+    return np.absolute(surrogate(x) - target_value)
 
 
 class ParetoFront(Acquisition):
@@ -231,7 +243,7 @@ class ParetoFront(Acquisition):
             # For discontinuous Pareto fronts in the original problem, such set
             # may not exist, or it may be too far from the target value.
             multiobjTVProblem = PymooProblem(
-                lambda x: np.absolute(surrogateModel(x) - tau),
+                functools.partial(_distance_to_target, surrogateModel, tau),
                 bounds,
                 iindex,
                 n_obj=objdim,

@@ -155,9 +155,7 @@ def fsapso(
         swarmInitX = np.vstack((_x, swarmInitX))
 
     # PSO problem
-    surrogateProblem = PymooProblem(
-        objfunc=lambda x: surrogateModel(x).reshape(-1, 1), bounds=bounds
-    )
+    surrogateProblem = PymooProblem(objfunc=surrogateModel, bounds=bounds)
 
     # Initialize PSO algorithm
     pso = PSO(
@@ -309,8 +307,8 @@ def fsapso(
             break
 
     # Update output
-    out.sample = out.sample[:out.nfev]
-    out.fsample = out.fsample[:out.nfev]
+    out.sample = out.sample[: out.nfev]
+    out.fsample = out.fsample[: out.nfev]
 
     # Update surrogate model if it lives outside the function scope
     if return_surrogate:

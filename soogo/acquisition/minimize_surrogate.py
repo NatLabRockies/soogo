@@ -25,40 +25,24 @@ from scipy.special import gamma
 from scipy.optimize import minimize
 from scipy.stats.qmc import LatinHypercube
 from typing import Optional
+import functools
 
 from .base import Acquisition
 from ..model import Surrogate
 from ..sampling import random_sample
 from .utils import FarEnoughSampleFilter
+from ..optimize.utils import PartialVariableFunction
 
 
-class _SurrogateMinimizerWrapper:
-    """Helper class to wrap surrogate model for minimization.
+def _ith_function_value(fun, x, i):
+    """Returns the i-th component of the function value at x.
 
-    :param surrogateModel: Surrogate model to be minimized.
-    :param x: Base point in the space.
-    :param i: Index(s) that will be optimized.
+    :param fun: Function that computes the function value at x.
+    :param x: Point at which to evaluate the function.
+    :param i: Index of the component to return.
+    :return: i-th component of the function value at x.
     """
-
-    def __init__(self, surrogateModel, x, i):
-        self.surrogateModel = surrogateModel
-        self.x = x
-        self.i = i
-
-    def fun(self, xi):
-        """Evaluate surrogate model at modified point x[i] = xi."""
-        _x = self.x.copy()
-        _x[self.i] = xi
-        return self.surrogateModel(_x)
-
-    def jac(self, xi):
-        """Evaluate surrogate model Jacobian at modified point x[i] = xi.
-
-        Only the components corresponding to indices i are returned.
-        """
-        _x = self.x.copy()
-        _x[self.i] = xi
-        return self.surrogateModel.jac(_x)[self.i]
+    return fun(x)[i]
 
 
 class MinimizeSurrogate(Acquisition):
@@ -144,8 +128,15 @@ class MinimizeSurrogate(Acquisition):
         critdist = (
             (gamma(1 + (dim / 2)) * volumeBounds * sigma) ** (1 / dim)
         ) / np.sqrt(np.pi)  # critical distance when 2 points are equal
-        has_jac = hasattr(surrogateModel, "jac") and callable(
-            getattr(surrogateModel, "jac")
+        model_jac = (
+            functools.partial(
+                _ith_function_value, surrogateModel.jac, i=cindex
+            )
+            if (
+                hasattr(surrogateModel, "jac")
+                and callable(getattr(surrogateModel, "jac"))
+            )
+            else None
         )
 
         # Local space to store information
@@ -220,14 +211,19 @@ class MinimizeSurrogate(Acquisition):
             for i in range(nSelected):
                 xi = candidates[chosenIds[i], :]
 
-                wrapper = _SurrogateMinimizerWrapper(
+                wrapper_fun = PartialVariableFunction(
                     surrogateModel, xi, cindex
                 )
+                wrapper_jac = (
+                    PartialVariableFunction(model_jac, xi, cindex)
+                    if model_jac is not None
+                    else None
+                )
                 res = minimize(
-                    wrapper.fun,
+                    wrapper_fun,
                     xi[cindex],
                     method="L-BFGS-B",
-                    jac=wrapper.jac if has_jac else None,
+                    jac=wrapper_jac,
                     bounds=cbounds,
                     options={
                         "maxfun": remevals,

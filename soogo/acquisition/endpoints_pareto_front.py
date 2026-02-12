@@ -22,6 +22,7 @@ __authors__ = ["Weslley S. Pereira"]
 
 import numpy as np
 from typing import Optional
+import functools
 
 from pymoo.optimize import minimize as pymoo_minimize
 
@@ -88,7 +89,7 @@ class EndPointsParetoFront(Acquisition):
         endpoints = np.empty((0, dim))
         for i in range(objdim):
             minimumPointProblem = PymooProblem(
-                lambda x: surrogateModel(x, i=i), bounds, iindex
+                functools.partial(surrogateModel, i=i), bounds, iindex
             )
             res = pymoo_minimize(
                 minimumPointProblem,

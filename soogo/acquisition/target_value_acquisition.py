@@ -20,6 +20,7 @@ __authors__ = ["Weslley S. Pereira"]
 import numpy as np
 import logging
 from typing import Optional
+import functools
 
 from pymoo.optimize import minimize as pymoo_minimize
 
@@ -268,8 +269,11 @@ class TargetValueAcquisition(Acquisition):
                     surrogateModel.prepare_mu_measure()
                     mu_measure_is_prepared = True
                 problem = PymooProblem(
-                    lambda x: TargetValueAcquisition.bumpiness_measure(
-                        surrogateModel, x, f_target, target_range
+                    functools.partial(
+                        TargetValueAcquisition.bumpiness_measure,
+                        surrogateModel,
+                        target=f_target,
+                        target_range=target_range,
                     ),
                     bounds,
                     iindex,
@@ -305,8 +309,11 @@ class TargetValueAcquisition(Acquisition):
                         surrogateModel.prepare_mu_measure()
                         mu_measure_is_prepared = True
                     problem = PymooProblem(
-                        lambda x: TargetValueAcquisition.bumpiness_measure(
-                            surrogateModel, x, f_target, target_range
+                        functools.partial(
+                            TargetValueAcquisition.bumpiness_measure,
+                            surrogateModel,
+                            target=f_target,
+                            target_range=target_range,
                         ),
                         bounds,
                         iindex,

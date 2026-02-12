@@ -19,6 +19,7 @@ import time
 import warnings
 import logging
 from typing import Callable, Optional
+import functools
 
 import numpy as np
 from scipy.spatial.distance import cdist
@@ -49,6 +50,17 @@ try:
     import PyNomad
 except ImportError:
     PyNomad = None
+
+
+def _constraint_function(threshold, surrogate, x):
+    """Constraint: threshold - surrogate(x) <= 0
+
+    :param threshold: Threshold for feasibility.
+    :param surrogate: Surrogate model for the evaluation function.
+    :param x: Point to evaluate.
+    :return: Value of the constraint function at x.
+    """
+    return threshold - surrogate(x)
 
 
 def shebo(
@@ -328,7 +340,9 @@ def shebo(
             exclusion_set=evalSurrogate.X[evalSurrogate.Y == 0],
             xbest=out.x,
             ybest=out.fx,
-            constr=lambda x: threshold - evalSurrogate(x),
+            constr=functools.partial(
+                _constraint_function, threshold, evalSurrogate
+            ),
         )
         if len(xselected) == 0:
             threshold = float(np.finfo(float).eps)
@@ -410,8 +424,8 @@ def shebo(
             break
 
     # Update output
-    out.sample = out.sample[:out.nfev]
-    out.fsample = out.fsample[:out.nfev]
+    out.sample = out.sample[: out.nfev]
+    out.fsample = out.fsample[: out.nfev]
 
     # Update surrogate model if it lives outside the function scope
     if return_surrogate and evalSurrogate.ntrain > 0:

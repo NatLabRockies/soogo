@@ -19,6 +19,7 @@ __authors__ = ["Weslley S. Pereira", "Byron Selvage"]
 
 from collections.abc import Callable
 from scipy.spatial.distance import cdist
+from typing import Optional
 
 import numpy as np
 
@@ -116,3 +117,52 @@ def uncertainty_score(candidates, points, fvals, k=3):
     scores = sigmoid * (distMean + sigma)
 
     return scores
+
+
+class PartialVariableFunction:
+    """Helper class to wrap a function that will be optimized with respect to a
+    subset of the variables.
+
+    :param fun: Function to be minimized.
+    :param x: Base point in the space.
+    :param i: Index(s) that will be optimized.
+    :param out: Output array to store the result of the function evaluation.
+
+    .. attribute:: fun
+
+        The function to be minimized, which takes a modified point x[i] as
+        input.
+
+    .. attribute:: x
+
+        The base point in the space, which will be modified at index i.
+
+    .. attribute:: i
+
+        The index or indices of the variable(s) that will be optimized.
+
+    .. attribute:: out
+
+        An optional output object to log the results of function evaluations.
+    """
+
+    def __init__(self, fun, x, i, out: Optional[OptimizeResult] = None):
+        self._fun = fun
+        self.x = x
+        self.i = i
+        self.out = out
+
+    def fun(self, xi):
+        """Evaluate surrogate model at modified point x[i] = xi."""
+        _x = self.x.copy()
+        _x[self.i] = xi
+        _fx = self._fun(_x)
+
+        if self.out is not None:
+            self.out.sample[self.out.nfev] = _x
+            self.out.fsample[self.out.nfev] = _fx
+            self.out.nfev += 1
+
+        return _fx
+
+    __call__ = fun
