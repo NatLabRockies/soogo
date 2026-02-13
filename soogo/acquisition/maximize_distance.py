@@ -68,6 +68,7 @@ class MaximizeDistance(Acquisition):
         self,
         surrogateModel: Surrogate,
         bounds,
+        constr=None,
         exclusion_set: Optional[np.ndarray] = None,
         **kwargs,
     ) -> np.ndarray:
@@ -78,13 +79,17 @@ class MaximizeDistance(Acquisition):
         :param surrogateModel: The surrogate model.
         :param sequence bounds: List with the limits [x_min,x_max] of each
             direction x in the space.
-        :param n: Number of points to be acquired.
+        :param constr: Constraint function for candidate points.
+            Feasible candidates should satisfy constr(x) <= 0.
         :param exclusion_set: Known points, if any, in addition to the ones
             used to train the surrogate.
         :return: Array of acquired points that maximize minimum distance.
         """
         iindex = surrogateModel.iindex
         optimizer = self.optimizer if len(iindex) == 0 else self.mi_optimizer
+        n_ieq_constr = (
+            (constr(surrogateModel.X[0:1])).size if constr is not None else 0
+        )
 
         # Report unused kwargs
         super().report_unused_optimize_kwargs(kwargs)
@@ -100,6 +105,8 @@ class MaximizeDistance(Acquisition):
             functools.partial(_negative_distance, filter.tree),
             bounds,
             iindex,
+            gfunc=constr,
+            n_ieq_constr=n_ieq_constr,
         )
         res = pymoo_minimize(
             problem,

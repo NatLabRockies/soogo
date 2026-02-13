@@ -137,13 +137,18 @@ class TargetValueAcquisition(Acquisition):
         # Compute bumpiness measure
         return np.where(absmu < np.inf, (absmu * dist) * dist, np.inf)
 
-    def min_of_surrogate(self, surrogateModel: RbfModel, bounds):
+    def min_of_surrogate(
+        self, surrogateModel: RbfModel, bounds, constr=None, n_ieq_constr=0
+    ):
         """Find the minimum of the surrogate model using the internal
         optimizer.
 
         :param surrogateModel: Surrogate model.
         :param sequence bounds: List with the limits [x_min,x_max] of each
             direction x in the space.
+        :param constr: Constraint function for candidate points.
+            Feasible candidates should satisfy constr(x) <= 0.
+        :param n_ieq_constr: Number of inequality constraints. Default is 0.
         :return: x_rbf, f_rbf - point and value of the minimum found, or the
             best training point if the minimization fails.
         """
@@ -152,7 +157,13 @@ class TargetValueAcquisition(Acquisition):
         optimizer = self.optimizer if len(iindex) == 0 else self.mi_optimizer
         f_rbf = None
 
-        problem = PymooProblem(surrogateModel, bounds, iindex)
+        problem = PymooProblem(
+            surrogateModel,
+            bounds,
+            iindex,
+            gfunc=constr,
+            n_ieq_constr=n_ieq_constr,
+        )
         res = pymoo_minimize(
             problem,
             optimizer,
@@ -180,6 +191,7 @@ class TargetValueAcquisition(Acquisition):
         surrogateModel: RbfModel,
         bounds,
         n: int = 1,
+        constr=None,
         exclusion_set: Optional[np.ndarray] = None,
         **kwargs,
     ) -> np.ndarray:
@@ -190,11 +202,16 @@ class TargetValueAcquisition(Acquisition):
         :param sequence bounds: List with the limits [x_min,x_max] of each
             direction x in the space.
         :param n: Number of points to be acquired.
+        :param constr: Constraint function for candidate points.
+            Feasible candidates should satisfy constr(x) <= 0.
         :param exclusion_set: Known points, if any, in addition to the ones
             used to train the surrogate.
         :return: k-by-dim matrix with the selected points.
         """
         dim = len(bounds)  # Dimension of the problem
+        n_ieq_constr = (
+            (constr(surrogateModel.X[0:1])).size if constr is not None else 0
+        )
 
         if n > self.cycleLength + 2:
             raise ValueError(
@@ -233,7 +250,11 @@ class TargetValueAcquisition(Acquisition):
                     surrogateModel.prepare_mu_measure()
                     mu_measure_is_prepared = True
                 problem = PymooProblem(
-                    surrogateModel.mu_measure, bounds, iindex
+                    surrogateModel.mu_measure,
+                    bounds,
+                    iindex,
+                    gfunc=constr,
+                    n_ieq_constr=n_ieq_constr,
                 )
 
                 res = pymoo_minimize(
@@ -254,7 +275,10 @@ class TargetValueAcquisition(Acquisition):
                 # find min of surrogate model
                 if f_rbf is None:
                     x_rbf, f_rbf = self.min_of_surrogate(
-                        surrogateModel, bounds
+                        surrogateModel,
+                        bounds,
+                        constr,
+                        n_ieq_constr=n_ieq_constr,
                     )
 
                 wk = (
@@ -277,6 +301,8 @@ class TargetValueAcquisition(Acquisition):
                     ),
                     bounds,
                     iindex,
+                    gfunc=constr,
+                    n_ieq_constr=n_ieq_constr,
                 )
 
                 res = pymoo_minimize(
@@ -294,7 +320,10 @@ class TargetValueAcquisition(Acquisition):
                 # find the minimum of RBF surface
                 if f_rbf is None:
                     x_rbf, f_rbf = self.min_of_surrogate(
-                        surrogateModel, bounds
+                        surrogateModel,
+                        bounds,
+                        constr,
+                        n_ieq_constr=n_ieq_constr,
                     )
 
                 if f_rbf > (
@@ -317,6 +346,8 @@ class TargetValueAcquisition(Acquisition):
                         ),
                         bounds,
                         iindex,
+                        gfunc=constr,
+                        n_ieq_constr=n_ieq_constr,
                     )
 
                     res = pymoo_minimize(

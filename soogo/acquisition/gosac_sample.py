@@ -78,6 +78,7 @@ class GosacSample(Acquisition):
         :param constr: Constraint function to be applied to surrogate model
             predictions. If none is provided, use the surrogate model as
             the constraint function.
+            Feasible candidates should satisfy constr(x) <= 0.
         :param exclusion_set: Known points, if any, in addition to the ones
             used to train the surrogate.
         :return: 1-by-dim matrix with the selected points.

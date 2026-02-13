@@ -42,6 +42,7 @@ def surrogate_optimization(
     *,
     surrogateModel: Optional[Surrogate] = None,
     acquisitionFunc: Optional[Acquisition] = None,
+    constr=None,
     batchSize: int = 1,
     disp: bool = False,
     callback: Optional[Callable[[OptimizeResult], None]] = None,
@@ -135,6 +136,11 @@ def surrogate_optimization(
     # Initialize optional variables
     return_surrogate = True
     if surrogateModel is None:
+        if constr is not None:
+            raise NotImplementedError(
+                "Initial design with constraints is not implemented yet."
+                "Please provide an initial surrogate model that already incorporates the constraints."
+            )
         return_surrogate = False
         surrogateModel = RbfModel(filter=MedianLpfFilter())
     if acquisitionFunc is None:
@@ -184,7 +190,12 @@ def surrogate_optimization(
         # Acquire new sample points
         t0 = time.time()
         xselected = acquisitionFunc.optimize(
-            surrogateModel, bounds, n=batchSize, xbest=out.x, ybest=out.fx
+            surrogateModel,
+            bounds,
+            n=batchSize,
+            xbest=out.x,
+            ybest=out.fx,
+            constr=constr,
         )
         tf = time.time()
         logger.info("Time to acquire new sample points: %f s", (tf - t0))

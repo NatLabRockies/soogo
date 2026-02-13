@@ -202,6 +202,7 @@ class Acquisition(ABC):
         :param xbest: Best point(s) found so far.
         :param ybest: Best objective value(s) found so far.
         :param constr: Constraint function for candidate points.
+            Feasible candidates should satisfy constr(x) <= 0.
         :param exclusion_set: Known points, if any, in addition to the ones
             used to train the surrogate.
         :param kwargs: Additional keyword arguments. Unused kwargs should be
